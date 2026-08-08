@@ -376,7 +376,7 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚘🚗 Пазар НОВИ МПС", "♻️ ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["🔍по МАРКИ", "🔍по МОДЕЛИ", "🚘НОВИ МПС", "♻️Вторичен Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
