@@ -7,14 +7,11 @@ import os
 import glob
 
 # ====================================================================================
-# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V6 - KPI Fixes & Brand Overview)
+# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V7 - Bugfix Release)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
 
-# ----------------------------------------------------------------------------------
-# 0. ПРЕМИУМ HERO БАНЕР И РЕСПОНСИВ ДИЗАЙН
-# ----------------------------------------------------------------------------------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -81,7 +78,6 @@ text-align: right;
 .meta-label { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 .meta-value { font-size: 0.9rem; color: #0f172a; font-weight: 700; margin-top: 2px; }
 
-/* FIX 1: Изравняване на KPI кутиите */
 .kpi-card { 
     background: #ffffff; 
     border: 1px solid #e2e8f0; 
@@ -130,13 +126,13 @@ st.markdown(f"""
 </div>
 <div>
 <div class="hero-title">AUTO MOTO SALES BG</div>
-<div class="hero-sub">Портал за анализ на регистрациите на МПС *BETA* </div>
+<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
 </div>
 </div>
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Данни от 01.01.2025 до 31.07.2026 </div>
+<div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -146,9 +142,6 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ----------------------------------------------------------------------------------
-# ПОМОЩНИ ФУНКЦИИ И КОНФИГУРАЦИИ ЗА ПЛОТЛИ (Мобилна оптимизация)
-# ----------------------------------------------------------------------------------
 PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False}
 
 def apply_plotly_mobile_lock(fig):
@@ -158,7 +151,6 @@ def apply_plotly_mobile_lock(fig):
     fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False)
     return fig
 
-# FIX 1: Добавен &nbsp; (празен интервал), ако няма подзаглавие, за да пази кутията висока.
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#4f46e5"):
     sub_html = f'<div class="kpi-sub" style="color:{sub_color};">{sub}</div>' if sub else '<div class="kpi-sub">&nbsp;</div>'
     col.markdown(
@@ -173,9 +165,6 @@ def get_rgb(hex_col):
     h = hex_col.lstrip('#')
     return ",".join(str(int(h[i:i+2], 16)) for i in (0, 2, 4))
 
-# ----------------------------------------------------------------------------------
-# 1. ГЛАВНО МЕНЮ И ВРЕМЕВИ ПРОЗОРЕЦ 
-# ----------------------------------------------------------------------------------
 VEHICLE_CATEGORIES = {
     "Леки автомобили (M1)": ["M1"],
     "Лекотоварни (N1)": ["N1"],
@@ -190,9 +179,6 @@ with col_cat:
     selected_cat = st.pills("Категория", options=list(VEHICLE_CATEGORIES.keys()), default="Леки автомобили (M1)", label_visibility="collapsed")
 if not selected_cat: st.stop()
 
-# ----------------------------------------------------------------------------------
-# 2. ОПТИМИЗИРАНА ОБРАБОТКА И ФИЛТРИРАНЕ НА КАТЕГОРИИ
-# ----------------------------------------------------------------------------------
 SUMMARY_ROW_PATTERN = r"ОБЩ|ВСИЧК|TOTAL|SUM"
 
 @st.cache_data(show_spinner=False)
@@ -289,9 +275,6 @@ if df_full is None or df_full.empty:
     st.error(f"Няма налични данни за категория '{selected_cat}'.")
     st.stop()
 
-# ----------------------------------------------------------------------------------
-# ВРЕМЕВИ ПРОЗОРЕЦ 
-# ----------------------------------------------------------------------------------
 unique_periods = df_full[["Sort_Index", "Период"]].drop_duplicates().sort_values("Sort_Index")
 p_opts = unique_periods["Sort_Index"].tolist()
 p_lbls = unique_periods["Период"].tolist()
@@ -332,7 +315,9 @@ has_prev_period = len(prev_sort_indices) > 0
 if has_prev_period:
     df_prev = df_full[df_full["Sort_Index"].isin(prev_sort_indices)].copy()
     df_prev["Нови"] = df_prev["Нови_Месец"]
-    df_prev["Вторичен Пазар"] = df_prev["Употр_Месец"] + df_prev["Други_Месец"]
+    df_prev["Употребявани"] = df_prev["Употр_Месец"]
+    df_prev["Пререгистрации"] = df_prev["Други_Месец"]
+    df_prev["Вторичен Пазар"] = df_prev["Употребявани"] + df_prev["Пререгистрации"]
     df_prev["Всички"] = df_prev["Нови"] + df_prev["Вторичен Пазар"]
     prev_labels = [period_lookup[s] for s in prev_sort_indices]
     prev_period_label = f"{prev_labels[0]} - {prev_labels[-1]}" if len(prev_labels) > 1 else prev_labels[0]
@@ -391,14 +376,13 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚙 Пазар НОВИ МПС", "🚗 ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["🏢 Анализ по Марки", "🔍 Анализ по Модели", "✨ Пазар НОВИ МПС", "🤝 ВТОРИЧЕН Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
     all_brands_list = sorted(df_working["Brand"].unique())
     
     col_b1, col_b2 = st.columns([1, 2])
-    # FIX 2: ШКОДА е избрана по подразбиране
     default_b = "ШКОДА" if "ШКОДА" in all_brands_list else all_brands_list[0]
     
     selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
@@ -408,13 +392,10 @@ with tab_brand:
         brand_data = df_working[df_working["Brand"] == selected_brand]
         brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_working.columns)
         
-        # FIX 3 & 4: Добавяне на KPI кутии в таба "Анализ по марки"
         total_market_metric = df_working[metric_brand].sum()
         brand_total = brand_data[metric_brand].sum()
         brand_prev_total = brand_data_prev[metric_brand].sum() if has_prev_period else None
         brand_share = (brand_total / total_market_metric) * 100 if total_market_metric > 0 else 0
-        
-        # Показваме брой активни модели (тъй като марката е винаги 1)
         active_models_count = brand_data[brand_data[metric_brand] > 0]["Model"].nunique()
         
         accent_brand = "#4f46e5"
