@@ -334,9 +334,9 @@ def render_kpi_growth(col, label, current_total, prev_total, accent):
     if growth_pct is None:
         kpi_card(col, label, "—", sub="Няма данни", accent="#94a3b8")
     elif growth_pct >= 0:
-        kpi_card(col, label, f"+{growth_pct:.1f}%", sub=f"📈 спрямо {prev_period_label}", sub_color="#10B981", accent=accent)
+        kpi_card(col, label, f"+{growth_pct:.1f}%", sub=f"🟢⬆ спрямо {prev_period_label}", sub_color="#10B981", accent=accent)
     else:
-        kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"📉 спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
+        kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"🔴⬇ спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
 
 def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, color_prv="#9ca3af"):
     if df_curr.empty:
@@ -376,7 +376,7 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["🔍по МАРКИ", "🔍по МОДЕЛИ", "🚘НОВИ МПС", "♻️Вторичен Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["🔍МАРКИ", "📌​МОДЕЛИ", "🚘НОВИ МПС", "♻️Вторичен Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
