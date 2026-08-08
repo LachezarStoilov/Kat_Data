@@ -7,7 +7,7 @@ import os
 import glob
 
 # ====================================================================================
-# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V5 - Gradients & YoY fixes)
+# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V6 - KPI Fixes & Brand Overview)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -81,10 +81,23 @@ text-align: right;
 .meta-label { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 .meta-value { font-size: 0.9rem; color: #0f172a; font-weight: 700; margin-top: 2px; }
 
-.kpi-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.2rem; border-left: 4px solid #4f46e5; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-height: 92px; }
+/* FIX 1: Изравняване на KPI кутиите */
+.kpi-card { 
+    background: #ffffff; 
+    border: 1px solid #e2e8f0; 
+    border-radius: 10px; 
+    padding: 1.2rem; 
+    border-left: 4px solid #4f46e5; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    height: 100%; 
+    min-height: 115px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center; 
+}
 .kpi-label { font-size: 0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; }
 .kpi-value { font-size: 1.8rem; font-weight:800; color:#0f172a; margin-top: 4px; }
-.kpi-sub { font-size: 0.8rem; font-weight:600; margin-top:5px; }
+.kpi-sub { font-size: 0.8rem; font-weight:600; margin-top:5px; min-height: 1.2em; }
 
 .section-title { font-size: 1.2rem; font-weight: 700; color:#1e293b; margin: 1.5rem 0 1rem 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;}
 
@@ -93,7 +106,7 @@ text-align: right;
 .hero-left { flex-direction: column; }
 .hero-right { flex-direction: column; width: 100%; align-items: stretch; text-align: center; }
 .meta-badge { text-align: center; }
-.kpi-card { margin-bottom: 15px; }
+.kpi-card { margin-bottom: 15px; min-height: auto; }
 }
 
 header { visibility: hidden; }
@@ -117,13 +130,13 @@ st.markdown(f"""
 </div>
 <div>
 <div class="hero-title">AUTO MOTO SALES BG</div>
-<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
+<div class="hero-sub">Портал за анализ на регистрациите на МПС *BETA* </div>
 </div>
 </div>
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Данни 01.01.2025 до 31.07.2026 </div>
+<div class="meta-value" style="color: #10b981;">🟢 Данни от 01.01.2025 до 31.07.2026 </div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -145,8 +158,9 @@ def apply_plotly_mobile_lock(fig):
     fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False)
     return fig
 
+# FIX 1: Добавен &nbsp; (празен интервал), ако няма подзаглавие, за да пази кутията висока.
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#4f46e5"):
-    sub_html = f'<div class="kpi-sub" style="color:{sub_color};">{sub}</div>' if sub else ""
+    sub_html = f'<div class="kpi-sub" style="color:{sub_color};">{sub}</div>' if sub else '<div class="kpi-sub">&nbsp;</div>'
     col.markdown(
         f'<div class="kpi-card" style="border-left-color:{accent};">'
         f'<div class="kpi-label">{label}</div><div class="kpi-value">{value}</div>{sub_html}</div>',
@@ -339,7 +353,6 @@ def render_kpi_growth(col, label, current_total, prev_total, accent):
     else:
         kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"📉 спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
 
-# 📈 ФИКСИРАНА ФУНКЦИЯ ЗА ТРЕНД: Решен проблемът с легендата
 def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, color_prv="#9ca3af"):
     if df_curr.empty:
         return
@@ -367,7 +380,6 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
         height=360, 
         dragmode=False,
         hovermode="x unified", 
-        # ЛЕГЕНДАТА ВЕЧЕ Е ОТДОЛУ ЗА ДА НЕ СЕ ЗАСИЧА С ТЕКСТА
         legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), 
         margin=dict(t=50, l=10, r=10, b=30)
     )
@@ -379,23 +391,40 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["🏢 Анализ по Марки", "🔍 Анализ по Модели", "✨ Пазар НОВИ МПС", "🤝 ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚙 Пазар НОВИ МПС", "🚗 ВТОРИЧЕН Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
     all_brands_list = sorted(df_working["Brand"].unique())
     
     col_b1, col_b2 = st.columns([1, 2])
-    default_b = "ПЕЖО" if "ПЕЖО" in all_brands_list else all_brands_list[0]
+    # FIX 2: ШКОДА е избрана по подразбиране
+    default_b = "ШКОДА" if "ШКОДА" in all_brands_list else all_brands_list[0]
     
     selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
     
     if selected_brand and metric_brand:
         brand_data = df_working[df_working["Brand"] == selected_brand]
-        
-        # ДОБАВЕН YoY ТРЕНД ЗА КОНКРЕТНАТА МАРКА
         brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_working.columns)
+        
+        # FIX 3 & 4: Добавяне на KPI кутии в таба "Анализ по марки"
+        total_market_metric = df_working[metric_brand].sum()
+        brand_total = brand_data[metric_brand].sum()
+        brand_prev_total = brand_data_prev[metric_brand].sum() if has_prev_period else None
+        brand_share = (brand_total / total_market_metric) * 100 if total_market_metric > 0 else 0
+        
+        # Показваме брой активни модели (тъй като марката е винаги 1)
+        active_models_count = brand_data[brand_data[metric_brand] > 0]["Model"].nunique()
+        
+        accent_brand = "#4f46e5"
+        kb1, kb2, kb3, kb4 = st.columns(4)
+        kpi_card(kb1, "Общо продажби", fmt_num(brand_total), accent=accent_brand)
+        render_kpi_growth(kb2, "Ръст (YoY)", brand_total, brand_prev_total, accent=accent_brand)
+        kpi_card(kb3, "Пазарен дял", f"{brand_share:.1f}%", sub=f"от общо {fmt_num(total_market_metric)}", accent=accent_brand)
+        kpi_card(kb4, "Активни модели", str(active_models_count), sub="с регистрации за периода", accent=accent_brand)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
         
         render_yoy_trend_chart(
             df_curr=brand_data, 
@@ -403,7 +432,7 @@ with tab_brand:
             metric=metric_brand, 
             title=f"Динамика на продажбите (YoY): {metric_brand} за {selected_brand}", 
             key="yoy_brand_chart", 
-            color_curr="#4f46e5"
+            color_curr=accent_brand
         )
         
         st.markdown(f"**Топ модели на {selected_brand} за периода ({start_period_str} - {end_period_str})**")
@@ -465,9 +494,8 @@ with tab_new:
     df_new_agg = df_working.groupby(["Brand", "Model"])["Нови"].sum().reset_index()
     total_new_market = df_new_agg["Нови"].sum()
     
-    # СВЕТЛО, ПОЗИТИВНО И СВЕЖО ЗЕЛЕНО ЗА НОВИ (Emerald 500)
     accent_new = "#10b981" 
-    green_gradient = ["#a7f3d0", "#10b981", "#047857"] # От много светло към тъмно ментово
+    green_gradient = ["#a7f3d0", "#10b981", "#047857"]
 
     if total_new_market == 0:
         st.info(f"Няма регистрирани нови МПС от тази категория за периода {period_label_full}.")
@@ -487,7 +515,6 @@ with tab_new:
         
         col_m1, col_m2 = st.columns([1, 1])
         top_brands_new = brand_totals_new.reset_index().head(15)
-        # ГРАДИЕНТНИ БАРОВЕ
         fig_b_new = px.bar(top_brands_new.sort_values("Нови"), x="Нови", y="Brand", orientation="h", title="Топ 15 Марки", text="Нови", color="Нови", color_continuous_scale=green_gradient)
         fig_b_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_b_new = apply_plotly_mobile_lock(fig_b_new)
