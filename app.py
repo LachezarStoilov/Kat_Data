@@ -125,14 +125,14 @@ st.markdown(f"""
 {svg_logo}
 </div>
 <div>
-<div class="hero-title">AUTO MOTO SALES BG</div>
-<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
+<div class="hero-title">AUTOMOTIVE SALES BG</div>
+<div class="hero-sub">Портал за анализ на регистрациите на МПС v0.9</div>
 </div>
 </div>
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
+<div class="meta-value" style="color: #10b981;">🟢 Данни от 01.01.2025 до 31.07.2026 </div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -376,7 +376,7 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["🏢 Анализ по Марки", "🔍 Анализ по Модели", "✨ Пазар НОВИ МПС", "🤝 ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚘🚗 Пазар НОВИ МПС", "♻️ ВТОРИЧЕН Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
