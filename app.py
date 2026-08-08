@@ -7,7 +7,7 @@ import os
 import glob
 
 # ====================================================================================
-# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V4 - PRO UX)
+# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V5 - Gradients & YoY fixes)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -117,13 +117,13 @@ st.markdown(f"""
 </div>
 <div>
 <div class="hero-title">AUTO MOTO SALES BG</div>
-<div class="hero-sub">BI портал за анализ на регистрациите на МПС</div>
+<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
 </div>
 </div>
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Заредени данни януари 2025 до юли 2026 </div>
+<div class="meta-value" style="color: #10b981;">🟢 Данни 01.01.2025 до 31.07.2026 </div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -136,13 +136,13 @@ st.markdown(f"""
 # ----------------------------------------------------------------------------------
 # ПОМОЩНИ ФУНКЦИИ И КОНФИГУРАЦИИ ЗА ПЛОТЛИ (Мобилна оптимизация)
 # ----------------------------------------------------------------------------------
-PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False} # Маха тулбара и зуума
+PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False}
 
 def apply_plotly_mobile_lock(fig):
-    fig.update_layout(dragmode=False) # Спира местенето с пръст
+    fig.update_layout(dragmode=False)
     fig.update_xaxes(fixedrange=True)
-    fig.update_yaxes(fixedrange=True, type='category') # type='category' оправя бъга с Пежо моделите (цифрите)
-    fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False) # Големи цифри
+    fig.update_yaxes(fixedrange=True, type='category')
+    fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False)
     return fig
 
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#4f46e5"):
@@ -236,7 +236,6 @@ def load_and_process(file_bytes_list, file_names, category_name):
         temp_df["Употр"] = temp_df[item["u_cols"]].sum(axis=1) if item["u_cols"] else 0
         temp_df["Други"] = temp_df[item["o_cols"]].sum(axis=1) if item["o_cols"] else 0
         
-        # СТРОГ ФИЛТЪР: Премахваме всички редове (модели/марки), които нямат продажби в тази категория!
         temp_df["Total_Cat"] = temp_df["Нови"] + temp_df["Употр"] + temp_df["Други"]
         temp_df = temp_df[temp_df["Total_Cat"] > 0].copy()
 
@@ -320,6 +319,7 @@ if has_prev_period:
     df_prev = df_full[df_full["Sort_Index"].isin(prev_sort_indices)].copy()
     df_prev["Нови"] = df_prev["Нови_Месец"]
     df_prev["Вторичен Пазар"] = df_prev["Употр_Месец"] + df_prev["Други_Месец"]
+    df_prev["Всички"] = df_prev["Нови"] + df_prev["Вторичен Пазар"]
     prev_labels = [period_lookup[s] for s in prev_sort_indices]
     prev_period_label = f"{prev_labels[0]} - {prev_labels[-1]}" if len(prev_labels) > 1 else prev_labels[0]
 else:
@@ -339,16 +339,19 @@ def render_kpi_growth(col, label, current_total, prev_total, accent):
     else:
         kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"📉 спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
 
-# 📈 НОВА ЛОГИКА ЗА ТРЕНД: Year-over-Year (Текуща спрямо Предходна година)
+# 📈 ФИКСИРАНА ФУНКЦИЯ ЗА ТРЕНД: Решен проблемът с легендата
 def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, color_prv="#9ca3af"):
-    curr_agg = df_curr.groupby("Месец")[metric].sum().reset_index()
+    if df_curr.empty:
+        return
+        
+    curr_agg = df_curr.groupby("Месец")[metric].sum().reset_index().sort_values("Месец")
     month_names = {1:"Яну", 2:"Фев", 3:"Мар", 4:"Апр", 5:"Май", 6:"Юни", 7:"Юли", 8:"Авг", 9:"Сеп", 10:"Окт", 11:"Ное", 12:"Дек"}
     curr_agg["Месец_Име"] = curr_agg["Месец"].map(month_names)
     
     fig = go.Figure()
     
     if not df_prv.empty:
-        prv_agg = df_prv.groupby("Месец")[metric].sum().reset_index()
+        prv_agg = df_prv.groupby("Месец")[metric].sum().reset_index().sort_values("Месец")
         prv_agg["Месец_Име"] = prv_agg["Месец"].map(month_names)
         fig.add_trace(go.Scatter(x=prv_agg["Месец_Име"], y=prv_agg[metric], name="Предходна година", mode="lines+markers",
                                  line=dict(color=color_prv, width=2, shape="spline", dash="dot"), marker=dict(size=6)))
@@ -358,16 +361,25 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
                              line=dict(color=color_curr, width=3, shape="spline"), marker=dict(size=8),
                              fill="tozeroy", fillcolor=f"rgba({get_rgb(color_curr)},0.08)"))
                              
-    fig.update_layout(title=title, template="plotly_white", height=340, dragmode=False,
-                      hovermode="x unified", legend=dict(orientation="h", y=1.18, x=0), margin=dict(t=50, l=10, r=10))
-    fig.update_xaxes(fixedrange=True)
+    fig.update_layout(
+        title=title, 
+        template="plotly_white", 
+        height=360, 
+        dragmode=False,
+        hovermode="x unified", 
+        # ЛЕГЕНДАТА ВЕЧЕ Е ОТДОЛУ ЗА ДА НЕ СЕ ЗАСИЧА С ТЕКСТА
+        legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), 
+        margin=dict(t=50, l=10, r=10, b=30)
+    )
+    
+    fig.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names.values()))
     fig.update_yaxes(fixedrange=True)
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key)
 
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["Анализ по MАРКИ", "Анализ по МОДЕЛИ", "НОВИ МПС", " ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["🏢 Анализ по Марки", "🔍 Анализ по Модели", "✨ Пазар НОВИ МПС", "🤝 ВТОРИЧЕН Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
@@ -382,23 +394,29 @@ with tab_brand:
     if selected_brand and metric_brand:
         brand_data = df_working[df_working["Brand"] == selected_brand]
         
-        brand_trend = brand_data.groupby(["Sort_Index", "Период"])[metric_brand].sum().reset_index().sort_values("Sort_Index")
-        fig_b_trend = go.Figure()
-        fig_b_trend.add_trace(go.Scatter(x=brand_trend["Период"], y=brand_trend[metric_brand], mode="lines+markers+text", 
-                                         text=brand_trend[metric_brand], textposition="top center", textfont=dict(size=14, color="#4f46e5"),
-                                         line=dict(width=3, shape="spline", color="#4f46e5"), marker=dict(size=8), fill="tozeroy", fillcolor="rgba(79,70,229,0.08)"))
-        fig_b_trend.update_layout(title=f"Динамика на продажбите ({metric_brand}) за марка {selected_brand}", template="plotly_white", height=380, hovermode="x unified", margin=dict(t=40, l=10, r=10), dragmode=False)
-        fig_b_trend.update_xaxes(fixedrange=True)
-        fig_b_trend.update_yaxes(fixedrange=True)
-        st.plotly_chart(fig_b_trend, config=PLOTLY_CONFIG)
+        # ДОБАВЕН YoY ТРЕНД ЗА КОНКРЕТНАТА МАРКА
+        brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_working.columns)
+        
+        render_yoy_trend_chart(
+            df_curr=brand_data, 
+            df_prv=brand_data_prev, 
+            metric=metric_brand, 
+            title=f"Динамика на продажбите (YoY): {metric_brand} за {selected_brand}", 
+            key="yoy_brand_chart", 
+            color_curr="#4f46e5"
+        )
         
         st.markdown(f"**Топ модели на {selected_brand} за периода ({start_period_str} - {end_period_str})**")
         brand_models = brand_data.groupby("Model")[metric_brand].sum().reset_index()
         brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=False).head(20)
-        brand_models["Model"] = brand_models["Model"].astype(str) # ЗАЩИТА: Превръща числа в текст
+        brand_models["Model"] = brand_models["Model"].astype(str) 
         
-        fig_b_models = px.bar(brand_models.sort_values(metric_brand), x=metric_brand, y="Model", orientation="h", text=metric_brand, color_discrete_sequence=["#6366f1"])
-        fig_b_models.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10))
+        fig_b_models = px.bar(
+            brand_models.sort_values(metric_brand), 
+            x=metric_brand, y="Model", orientation="h", text=metric_brand, 
+            color=metric_brand, color_continuous_scale=["#c7d2fe", "#6366f1", "#4338ca"]
+        )
+        fig_b_models.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_b_models = apply_plotly_mobile_lock(fig_b_models)
         st.plotly_chart(fig_b_models, config=PLOTLY_CONFIG)
 
@@ -426,7 +444,7 @@ with tab_model:
     if sel_models and metric_tab1:
         m_data = df_working[df_working["Label"].isin(sel_models)].sort_values("Sort_Index")
         fig = go.Figure()
-        colors = ["#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444"]
+        colors = ["#4f46e5", "#10b981", "#f59e0b", "#0ea5e9", "#ef4444"]
 
         for i, model in enumerate(sel_models):
             model_df = m_data[m_data["Label"] == model]
@@ -436,7 +454,7 @@ with tab_model:
                 line=dict(width=3, shape="spline", color=colors[i % len(colors)]), marker=dict(size=8)
             ))
 
-        fig.update_layout(template="plotly_white", height=400, hovermode="x unified", legend=dict(orientation="h", y=1.1, x=0), margin=dict(t=20, l=10, r=10), dragmode=False)
+        fig.update_layout(template="plotly_white", height=400, hovermode="x unified", legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), margin=dict(t=20, l=10, r=10, b=30), dragmode=False)
         fig.update_xaxes(fixedrange=True)
         fig.update_yaxes(fixedrange=True)
         st.plotly_chart(fig, config=PLOTLY_CONFIG)
@@ -447,8 +465,9 @@ with tab_new:
     df_new_agg = df_working.groupby(["Brand", "Model"])["Нови"].sum().reset_index()
     total_new_market = df_new_agg["Нови"].sum()
     
-    # Крокодилско зелено за Нови МПС
-    accent_new = "#1b4332" 
+    # СВЕТЛО, ПОЗИТИВНО И СВЕЖО ЗЕЛЕНО ЗА НОВИ (Emerald 500)
+    accent_new = "#10b981" 
+    green_gradient = ["#a7f3d0", "#10b981", "#047857"] # От много светло към тъмно ментово
 
     if total_new_market == 0:
         st.info(f"Няма регистрирани нови МПС от тази категория за периода {period_label_full}.")
@@ -468,15 +487,16 @@ with tab_new:
         
         col_m1, col_m2 = st.columns([1, 1])
         top_brands_new = brand_totals_new.reset_index().head(15)
-        fig_b_new = px.bar(top_brands_new.sort_values("Нови"), x="Нови", y="Brand", orientation="h", title="Топ 15 Марки", text="Нови", color_discrete_sequence=[accent_new])
-        fig_b_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10))
+        # ГРАДИЕНТНИ БАРОВЕ
+        fig_b_new = px.bar(top_brands_new.sort_values("Нови"), x="Нови", y="Brand", orientation="h", title="Топ 15 Марки", text="Нови", color="Нови", color_continuous_scale=green_gradient)
+        fig_b_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_b_new = apply_plotly_mobile_lock(fig_b_new)
         col_m1.plotly_chart(fig_b_new, config=PLOTLY_CONFIG)
 
         top_models_new = df_new_agg.sort_values("Нови", ascending=False).head(15).copy()
         top_models_new["Име"] = (top_models_new["Brand"] + " " + top_models_new["Model"]).astype(str)
-        fig_m_new = px.bar(top_models_new.sort_values("Нови"), x="Нови", y="Име", orientation="h", title="Топ 15 Модели", text="Нови", color_discrete_sequence=["#2d6a4f"])
-        fig_m_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10))
+        fig_m_new = px.bar(top_models_new.sort_values("Нови"), x="Нови", y="Име", orientation="h", title="Топ 15 Модели", text="Нови", color="Нови", color_continuous_scale=green_gradient)
+        fig_m_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_m_new = apply_plotly_mobile_lock(fig_m_new)
         col_m2.plotly_chart(fig_m_new, config=PLOTLY_CONFIG)
 
@@ -496,6 +516,7 @@ with tab_used:
     total_used_market = df_used_agg["Вторичен Пазар"].sum()
     
     accent_used = "#0ea5e9"
+    blue_gradient = ["#bae6fd", "#0ea5e9", "#0369a1"]
 
     if total_used_market == 0:
         st.info(f"Няма данни за вторичния пазар за периода {period_label_full}.")
@@ -515,15 +536,15 @@ with tab_used:
         
         col_u1, col_u2 = st.columns([1, 1])
         top_brands_used = brand_totals_used.reset_index().head(15)
-        fig_b_used = px.bar(top_brands_used.sort_values("Вторичен Пазар"), x="Вторичен Пазар", y="Brand", orientation="h", title="Топ 15 Марки", text="Вторичен Пазар", color_discrete_sequence=[accent_used])
-        fig_b_used.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10))
+        fig_b_used = px.bar(top_brands_used.sort_values("Вторичен Пазар"), x="Вторичен Пазар", y="Brand", orientation="h", title="Топ 15 Марки", text="Вторичен Пазар", color="Вторичен Пазар", color_continuous_scale=blue_gradient)
+        fig_b_used.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_b_used = apply_plotly_mobile_lock(fig_b_used)
         col_u1.plotly_chart(fig_b_used, config=PLOTLY_CONFIG)
 
         top_models_used = df_used_agg.sort_values("Вторичен Пазар", ascending=False).head(15).copy()
         top_models_used["Име"] = (top_models_used["Brand"] + " " + top_models_used["Model"]).astype(str)
-        fig_m_used = px.bar(top_models_used.sort_values("Вторичен Пазар"), x="Вторичен Пазар", y="Име", orientation="h", title="Топ 15 Модели", text="Вторичен Пазар", color_discrete_sequence=["#38bdf8"])
-        fig_m_used.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10))
+        fig_m_used = px.bar(top_models_used.sort_values("Вторичен Пазар"), x="Вторичен Пазар", y="Име", orientation="h", title="Топ 15 Модели", text="Вторичен Пазар", color="Вторичен Пазар", color_continuous_scale=blue_gradient)
+        fig_m_used.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_m_used = apply_plotly_mobile_lock(fig_m_used)
         col_u2.plotly_chart(fig_m_used, config=PLOTLY_CONFIG)
 
