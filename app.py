@@ -349,7 +349,13 @@ def load_and_process(file_bytes_list, file_names, category_name):
     # ---------------------------------------------------------
     mapping_file = os.path.join("data", "brand_model_mapping_clean.csv")
     if os.path.exists(mapping_file):
-        map_df = pd.read_csv(mapping_file, dtype=str)
+try:
+            map_df = pd.read_csv(mapping_file, dtype=str, encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            try:
+                map_df = pd.read_csv(mapping_file, dtype=str, encoding="utf-8")
+            except UnicodeDecodeError:
+                map_df = pd.read_csv(mapping_file, dtype=str, encoding="cp1251")
         map_df = map_df.dropna(subset=["Clean_Brand", "Clean_Model"])
         
         # Сливаме базата на КАТ с речника на база Raw_Brand и Raw_Model
