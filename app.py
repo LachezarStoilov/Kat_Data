@@ -357,15 +357,26 @@ def load_and_process(file_bytes_list, file_names, category_name):
             except UnicodeDecodeError:
                 map_df = pd.read_csv(mapping_file, dtype=str, encoding="cp1251")
         
-        map_df = map_df.dropna(subset=["Clean_Brand", "Clean_Model"])
+        # ЗАСТРАХОВКА 1: Изчистване на скрити интервали в имената на колоните
+        map_df.columns = [c.strip() for c in map_df.columns]
         
-        # Сливаме базата на КАТ с речника на база Raw_Brand и Raw_Model
-        raw_df = raw_df.merge(map_df[["Raw_Brand", "Raw_Model", "Clean_Brand", "Clean_Model"]], 
-                              on=["Raw_Brand", "Raw_Model"], how="left")
-        
-        # Ако има превод от AI, ползваме го. Ако не (напр. съвсем нов запис), ползваме оригинала.
-        raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
-        raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
+        # ЗАСТРАХОВКА 2: Уеднаквяване на текста (всичко с главни букви и без интервали), за да мачне на 100%
+        if "Raw_Brand" in map_df.columns and "Raw_Model" in map_df.columns:
+            map_df["Raw_Brand"] = map_df["Raw_Brand"].astype(str).str.strip().str.upper()
+            map_df["Raw_Model"] = map_df["Raw_Model"].astype(str).str.strip().str.upper()
+            
+            map_df = map_df.dropna(subset=["Clean_Brand", "Clean_Model"])
+            
+            # Сливаме базите
+            raw_df = raw_df.merge(map_df[["Raw_Brand", "Raw_Model", "Clean_Brand", "Clean_Model"]], 
+                                  on=["Raw_Brand", "Raw_Model"], how="left")
+            
+            # Ако има превод от AI, ползваме го. Ако не, ползваме оригинала.
+            raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
+            raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
+        else:
+            raw_df["Brand"] = raw_df["Raw_Brand"]
+            raw_df["Temp_Model"] = raw_df["Raw_Model"]
     else:
         raw_df["Brand"] = raw_df["Raw_Brand"]
         raw_df["Temp_Model"] = raw_df["Raw_Model"]
@@ -515,7 +526,7 @@ with tab_brand:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_BRAND}">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
     all_brands_list = sorted(df_working["Brand"].unique())
 
-    default_b = "ШКОДА" if "ШКОДА" in all_brands_list else all_brands_list[0]
+    default_b = "SKODA" if "SKODA" in all_brands_list else all_brands_list[0]
 
     col_b1, col_b2 = st.columns([1, 2])
     selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
@@ -576,7 +587,7 @@ with tab_model:
     if sel_brand == "Всички марки": available_labels = sorted(liquid_models["Label"].unique())
     else: available_labels = sorted(liquid_models[liquid_models["Brand"] == sel_brand]["Label"].unique())
 
-    target_models = ["ШКОДА КОДИАК", "ФОЛКСВАГЕН ТАЙРОН", "ХЮНДАЙ САНТА ФЕ", "КИА СОРЕНТО"]
+    target_models = ["SKODA Kodiaq", "VOLKSWAGEN Tayron", "HYUNDAI Santa Fe", "KIA Sorento"]
     def_models = [l for l in available_labels if any(t in l for t in target_models)]
     if not def_models and available_labels: def_models = [available_labels[0]]
 
