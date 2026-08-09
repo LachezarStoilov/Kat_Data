@@ -283,7 +283,7 @@ SUMMARY_ROW_PATTERN = r"ОБЩ|ВСИЧК|TOTAL|SUM"
 def load_and_process(file_bytes_list, file_names, category_name):
     parsed_files = []
     prefixes = VEHICLE_CATEGORIES[category_name]
-
+    
     for content, name in zip(file_bytes_list, file_names):
         match = re.search(r'(\d{1,2})[_.-](\d{4})', name)
         if not match: continue
@@ -291,21 +291,21 @@ def load_and_process(file_bytes_list, file_names, category_name):
         try:
             try: df = pd.read_csv(pd.io.common.BytesIO(content), encoding="utf-8")
             except: df = pd.read_csv(pd.io.common.BytesIO(content), encoding="cp1251")
-
+            
             df.columns = [c.strip() for c in df.columns]
             brand_col = [c for c in df.columns if "МАРКА" in c.upper()][0]
             model_col = [c for c in df.columns if "МОДЕЛ" in c.upper()][0]
-
+            
             n_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'нови' in c.lower() and 'общо' not in c.lower()]
             u_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'употр' in c.lower() and 'общо' not in c.lower()]
             o_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'други' in c.lower() and 'общо' not in c.lower()]
-
+            
             cols_to_keep = [brand_col, model_col] + n_cols + u_cols + o_cols
             df = df[cols_to_keep].copy()
-
+            
             parsed_files.append({
-                "year": year, "month": month,
-                "period_str": f"{month:02d}.{year}", "sort_index": year * 100 + month,
+                "year": year, "month": month, 
+                "period_str": f"{month:02d}.{year}", "sort_index": year * 100 + month, 
                 "df": df, "n_cols": n_cols, "u_cols": u_cols, "o_cols": o_cols,
                 "b_col": brand_col, "m_col": model_col
             })
@@ -319,37 +319,61 @@ def load_and_process(file_bytes_list, file_names, category_name):
         temp_df = item["df"].copy()
         temp_df["Година"], temp_df["Месец"], temp_df["Период"], temp_df["Sort_Index"] = item["year"], item["month"], item["period_str"], item["sort_index"]
 
-        temp_df["Brand"] = temp_df[item["b_col"]].fillna("НЕИЗВЕСТНА").astype(str).str.strip().str.upper()
-        temp_df["_RawModel"] = temp_df[item["m_col"]].fillna("НЕИЗВЕСТЕН").astype(str).str.strip().str.upper()
+        # 1. Записваме суровите данни от КАТ
+        temp_df["Raw_Brand"] = temp_df[item["b_col"]].fillna("НЕИЗВЕСТНА").astype(str).str.strip().str.upper()
+        temp_df["Raw_Model"] = temp_df[item["m_col"]].fillna("НЕИЗВЕСТЕН").astype(str).str.strip().str.upper()
 
         valid_mask = (
-            (~temp_df["Brand"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
-            (~temp_df["_RawModel"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
-            (temp_df["Brand"].str.strip() != "")
+            (~temp_df["Raw_Brand"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
+            (~temp_df["Raw_Model"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
+            (temp_df["Raw_Brand"] != "")
         )
         temp_df = temp_df[valid_mask].copy()
         if temp_df.empty: continue
-
+        
         temp_df["Нови"] = temp_df[item["n_cols"]].sum(axis=1) if item["n_cols"] else 0
         temp_df["Употр"] = temp_df[item["u_cols"]].sum(axis=1) if item["u_cols"] else 0
         temp_df["Други"] = temp_df[item["o_cols"]].sum(axis=1) if item["o_cols"] else 0
-
+        
         temp_df["Total_Cat"] = temp_df["Нови"] + temp_df["Употр"] + temp_df["Други"]
         temp_df = temp_df[temp_df["Total_Cat"] > 0].copy()
 
-        def clean_model(b, m): return m[len(b):].strip() if m.startswith(b) and len(m) > len(b) else m
-        temp_df["Model"] = [clean_model(b, m) for b, m in zip(temp_df["Brand"], temp_df["_RawModel"])]
-        temp_df["Label"] = temp_df["Brand"] + " " + temp_df["Model"]
-
-        clean_df = temp_df[["Sort_Index", "Година", "Месец", "Период", "Brand", "Model", "Label", "Нови", "Употр", "Други"]]
+        clean_df = temp_df[["Sort_Index", "Година", "Месец", "Период", "Raw_Brand", "Raw_Model", "Нови", "Употр", "Други"]]
         all_dfs.append(clean_df)
 
     if not all_dfs: return None
     raw_df = pd.concat(all_dfs, ignore_index=True)
 
+    # ---------------------------------------------------------
+    # 2. ИНТЕГРИРАНЕ НА AI РЕЧНИКА
+    # ---------------------------------------------------------
+    mapping_file = os.path.join("data", "brand_model_mapping_clean.csv")
+    if os.path.exists(mapping_file):
+        map_df = pd.read_csv(mapping_file, dtype=str)
+        map_df = map_df.dropna(subset=["Clean_Brand", "Clean_Model"])
+        
+        # Сливаме базата на КАТ с речника на база Raw_Brand и Raw_Model
+        raw_df = raw_df.merge(map_df[["Raw_Brand", "Raw_Model", "Clean_Brand", "Clean_Model"]], 
+                              on=["Raw_Brand", "Raw_Model"], how="left")
+        
+        # Ако има превод от AI, ползваме го. Ако не (напр. съвсем нов запис), ползваме оригинала.
+        raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
+        raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
+    else:
+        raw_df["Brand"] = raw_df["Raw_Brand"]
+        raw_df["Temp_Model"] = raw_df["Raw_Model"]
+
+    # Допълнителна застраховка: изчистваме повторението на марката в модела, ако няма AI превод
+    def clean_fallback_model(b, m): 
+        return m[len(b):].strip() if str(m).startswith(str(b)) and len(str(m)) > len(str(b)) else str(m)
+    
+    raw_df["Model"] = [clean_fallback_model(b, m) for b, m in zip(raw_df["Brand"], raw_df["Temp_Model"])]
+    raw_df["Label"] = raw_df["Brand"] + " " + raw_df["Model"]
+
+    # 3. Агрегираме чистите данни
     agg_df = raw_df.groupby(["Sort_Index", "Година", "Месец", "Период", "Brand", "Model", "Label"], as_index=False)[["Нови", "Употр", "Други"]].sum()
     agg_df = agg_df.sort_values(by=["Sort_Index", "Brand", "Model"])
-
+    
     for col in ["Нови", "Употр", "Други"]:
         agg_df[f"{col}_Месец"] = agg_df.groupby(["Година", "Brand", "Model"])[col].diff().fillna(agg_df[col]).clip(lower=0)
 
