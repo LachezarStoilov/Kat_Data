@@ -344,29 +344,72 @@ def load_and_process(file_bytes_list, file_names, category_name):
     if not all_dfs: return None
     raw_df = pd.concat(all_dfs, ignore_index=True)
 
+      # ---------------------------------------------------------
+    # 2. ИНТЕГРИРАНЕ НА РЕЧНИКА ЗА МАРКИ И МОДЕЛИ
     # ---------------------------------------------------------
-    # 2. ИНТЕГРИРАНЕ НА AI РЕЧНИКА
+    #
+    # КАТ използва кирилица.
+    #
+    # Пример:
+    #
+    # АБЕЙ -> ABBEY
+    #
+    # Речникът съдържа:
+    #
+    # Raw_Brand
+    # Raw_Model
+    # Clean_Brand
+    # Clean_Model
+    #
+    # ВАЖНО:
+    # Не използваме AI при всяко зареждане.
+    # Това е локален lookup от CSV.
+    #
     # ---------------------------------------------------------
+
+    import unicodedata
+
+
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
     mapping_file = os.path.join(
         BASE_DIR,
         "data",
         "brand_model_mapping_clean.csv"
     )
 
-    def normalize_mapping_value(value):
-        """
-        Нормализира стойностите от КАТ и речника,
-        за да може да се направи точен match.
-        """
+
+    # ---------------------------------------------------------
+    # НОРМАЛИЗАЦИЯ
+    # ---------------------------------------------------------
+
+    def normalize_mapping_value(value, remove_punctuation=False):
 
         if pd.isna(value):
             return ""
 
         value = str(value)
 
-        # UTF-8 BOM
+        # Unicode normalization
+        value = unicodedata.normalize("NFKC", value)
+
+        # Премахваме BOM
         value = value.replace("\ufeff", "")
+
+        # Zero-width characters
+        value = value.replace("\u200b", "")
+        value = value.replace("\u200c", "")
+        value = value.replace("\u200d", "")
+        value = value.replace("\ufeff", "")
+
+        # Non-breaking spaces
+        value = value.replace("\u00a0", " ")
+
+        # Различни видове тирета -> стандартно тире
+        value = value.replace("–", "-")
+        value = value.replace("—", "-")
+        value = value.replace("-", "-")
+        value = value.replace("−", "-")
 
         # Кавички
         value = value.replace('"', "")
@@ -375,23 +418,28 @@ def load_and_process(file_bytes_list, file_names, category_name):
         # Многократни интервали
         value = re.sub(r"\s+", " ", value)
 
-        return value.strip().upper()
+        value = value.strip().upper()
+
+        # За сравнение на марки:
+        # А.БУКАТЗ
+        # А БУКАТЗ
+        # АБУКАТЗ
+        #
+        # ще могат да бъдат сравнени.
+        if remove_punctuation:
+            value = re.sub(r"[^0-9A-ZА-ЯЁЄІЇЬЪЮЯ\s]", "", value)
+            value = re.sub(r"\s+", "", value)
+
+        return value
 
 
     # ---------------------------------------------------------
-    # Проверка дали речникът съществува
+    # ЗАРЕЖДАНЕ НА РЕЧНИКА
     # ---------------------------------------------------------
 
     if os.path.isfile(mapping_file):
 
         try:
-
-            # -------------------------------------------------
-            # Четене на CSV
-            # -------------------------------------------------
-            # utf-8-sig е важно за файлове, записани с Excel,
-            # защото премахва BOM от първата колона.
-            # -------------------------------------------------
 
             map_df = pd.read_csv(
                 mapping_file,
@@ -405,47 +453,55 @@ def load_and_process(file_bytes_list, file_names, category_name):
 
             try:
 
-                # Резервен вариант за файл с друг encoding
                 map_df = pd.read_csv(
                     mapping_file,
                     sep=",",
                     dtype=str,
-                    encoding="cp1251",
+                    encoding="utf-8",
+                    engine="python",
                     keep_default_na=False
                 )
 
-            except Exception as e:
+            except Exception:
 
-                st.error(
-                    f"❌ Грешка при зареждане на речника: {e}"
-                )
+                try:
 
-                map_df = pd.DataFrame()
+                    map_df = pd.read_csv(
+                        mapping_file,
+                        sep=";",
+                        dtype=str,
+                        encoding="utf-8-sig",
+                        engine="python",
+                        keep_default_na=False
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"❌ Не мога да прочета речника: {e}"
+                    )
+
+                    map_df = pd.DataFrame()
 
 
         # -----------------------------------------------------
-        # Проверяваме дали CSV е зареден
+        # ПРОВЕРКА НА РЕЧНИКА
         # -----------------------------------------------------
 
         if not map_df.empty:
 
-            # -------------------------------------------------
-            # Нормализиране на имената на колоните
-            # -------------------------------------------------
-
             map_df.columns = [
-                str(col)
+                unicodedata.normalize(
+                    "NFKC",
+                    str(c)
+                )
                 .replace("\ufeff", "")
                 .replace('"', "")
                 .replace("'", "")
                 .strip()
-                for col in map_df.columns
+                for c in map_df.columns
             ]
 
-
-            # -------------------------------------------------
-            # Задължителни колони
-            # -------------------------------------------------
 
             required_columns = [
                 "Raw_Brand",
@@ -454,18 +510,19 @@ def load_and_process(file_bytes_list, file_names, category_name):
                 "Clean_Model"
             ]
 
+
             missing_columns = [
-                col
-                for col in required_columns
-                if col not in map_df.columns
+                c
+                for c in required_columns
+                if c not in map_df.columns
             ]
 
 
             if missing_columns:
 
                 st.error(
-                    "❌ Речникът е намерен, но структурата му е грешна.\n\n"
-                    f"Липсват колони: {missing_columns}\n\n"
+                    "❌ Грешна структура на речника.\n\n"
+                    f"Липсват: {missing_columns}\n\n"
                     f"Налични колони: {list(map_df.columns)}"
                 )
 
@@ -475,26 +532,32 @@ def load_and_process(file_bytes_list, file_names, category_name):
             else:
 
                 # -------------------------------------------------
-                # Почистваме речника
+                # RAW КЛЮЧОВЕ
                 # -------------------------------------------------
 
-                map_df["Raw_Brand"] = (
-                    map_df["Raw_Brand"]
-                    .apply(normalize_mapping_value)
+                map_df["_Brand_Key"] = map_df["Raw_Brand"].apply(
+                    lambda x: normalize_mapping_value(
+                        x,
+                        remove_punctuation=True
+                    )
                 )
 
-                map_df["Raw_Model"] = (
-                    map_df["Raw_Model"]
-                    .apply(normalize_mapping_value)
+                map_df["_Model_Key"] = map_df["Raw_Model"].apply(
+                    lambda x: normalize_mapping_value(x)
                 )
 
+
+                # -------------------------------------------------
+                # CLEAN СТОЙНОСТИ
+                # -------------------------------------------------
 
                 map_df["Clean_Brand"] = (
                     map_df["Clean_Brand"]
                     .astype(str)
-                    .str.replace("\ufeff", "", regex=False)
-                    .str.replace('"', "", regex=False)
-                    .str.replace("'", "", regex=False)
+                    .replace(
+                        ["nan", "NAN", "None", "NONE"],
+                        ""
+                    )
                     .str.strip()
                 )
 
@@ -502,79 +565,121 @@ def load_and_process(file_bytes_list, file_names, category_name):
                 map_df["Clean_Model"] = (
                     map_df["Clean_Model"]
                     .astype(str)
-                    .str.replace("\ufeff", "", regex=False)
-                    .str.replace('"', "", regex=False)
-                    .str.replace("'", "", regex=False)
+                    .replace(
+                        ["nan", "NAN", "None", "NONE"],
+                        ""
+                    )
                     .str.strip()
                 )
 
 
                 # -------------------------------------------------
-                # Почистваме данните от КАТ по същия начин
+                # НОРМАЛИЗИРАМЕ ДАННИТЕ ОТ КАТ
                 # -------------------------------------------------
 
-                raw_df["Raw_Brand"] = (
-                    raw_df["Raw_Brand"]
-                    .apply(normalize_mapping_value)
+                raw_df["_Brand_Key"] = raw_df["Raw_Brand"].apply(
+                    lambda x: normalize_mapping_value(
+                        x,
+                        remove_punctuation=True
+                    )
                 )
 
-                raw_df["Raw_Model"] = (
-                    raw_df["Raw_Model"]
-                    .apply(normalize_mapping_value)
+                raw_df["_Model_Key"] = raw_df["Raw_Model"].apply(
+                    lambda x: normalize_mapping_value(x)
                 )
 
 
                 # -------------------------------------------------
-                # Премахваме празни редове от речника
+                # ПРЕМАХВАМЕ ПРАЗНИ И ДУБЛИРАНИ КЛЮЧОВЕ
                 # -------------------------------------------------
 
                 map_df = map_df[
-                    (map_df["Raw_Brand"] != "") &
-                    (map_df["Raw_Model"] != "")
+                    (map_df["_Brand_Key"] != "")
                 ].copy()
 
 
                 # -------------------------------------------------
-                # При дублиране използваме първия валиден запис
+                # MAPPING ПО МАРКА
+                #
+                # Това е най-важното.
+                #
+                # Ако:
+                #
+                # КАТ = АБЕЙ
+                #
+                # речникът съдържа:
+                #
+                # АБЕЙ -> ABBEY
+                #
+                # ще получим:
+                #
+                # ABBEY
+                #
+                # независимо дали моделът съвпада.
                 # -------------------------------------------------
 
-                map_df = map_df.drop_duplicates(
-                    subset=["Raw_Brand", "Raw_Model"],
+                brand_map_df = (
+                    map_df[
+                        [
+                            "_Brand_Key",
+                            "Clean_Brand"
+                        ]
+                    ]
+                    .copy()
+                )
+
+
+                brand_map_df = brand_map_df[
+                    brand_map_df["Clean_Brand"].astype(str).str.strip() != ""
+                ]
+
+
+                brand_map_df = brand_map_df.drop_duplicates(
+                    subset=["_Brand_Key"],
                     keep="first"
                 )
 
 
                 # -------------------------------------------------
-                # MERGE
-                #
-                # КЛЮЧ:
-                # Raw_Brand + Raw_Model
-                #
-                # РЕЗУЛТАТ:
-                # Clean_Brand + Clean_Model
+                # MAPPING ПО МАРКА + МОДЕЛ
                 # -------------------------------------------------
 
-                raw_df = raw_df.merge(
-                    map_df[
-                        [
-                            "Raw_Brand",
-                            "Raw_Model",
-                            "Clean_Brand",
-                            "Clean_Model"
-                        ]
+                model_map_df = map_df[
+                    [
+                        "_Brand_Key",
+                        "_Model_Key",
+                        "Clean_Brand",
+                        "Clean_Model"
+                    ]
+                ].copy()
+
+
+                model_map_df = model_map_df[
+                    model_map_df["_Model_Key"] != ""
+                ]
+
+
+                model_map_df = model_map_df.drop_duplicates(
+                    subset=[
+                        "_Brand_Key",
+                        "_Model_Key"
                     ],
-                    on=[
-                        "Raw_Brand",
-                        "Raw_Model"
-                    ],
-                    how="left"
+                    keep="first"
                 )
 
 
                 # -------------------------------------------------
-                # Почистване на резултата от JOIN-а
+                # 1. ПЪРВО MATCH ПО МАРКА
                 # -------------------------------------------------
 
+                raw_df = raw_df.merge(
+                    brand_map_df,
+                    on="_Brand_Key",
+                    how="left"
+                )
+
+
+                # Clean_Brand от brand mapping
                 raw_df["Clean_Brand"] = (
                     raw_df["Clean_Brand"]
                     .fillna("")
@@ -582,69 +687,103 @@ def load_and_process(file_bytes_list, file_names, category_name):
                     .str.strip()
                 )
 
-                raw_df["Clean_Model"] = (
-                    raw_df["Clean_Model"]
-                    .fillna("")
-                    .astype(str)
-                    .str.strip()
+
+                # -------------------------------------------------
+                # 2. ПОСЛЕ MATCH ПО МАРКА + МОДЕЛ
+                # -------------------------------------------------
+
+                raw_df = raw_df.merge(
+                    model_map_df[
+                        [
+                            "_Brand_Key",
+                            "_Model_Key",
+                            "Clean_Brand",
+                            "Clean_Model"
+                        ]
+                    ].rename(
+                        columns={
+                            "Clean_Brand": "_Model_Clean_Brand",
+                            "Clean_Model": "_Model_Clean_Model"
+                        }
+                    ),
+                    on=[
+                        "_Brand_Key",
+                        "_Model_Key"
+                    ],
+                    how="left"
                 )
 
 
                 # -------------------------------------------------
                 # ФИНАЛНА МАРКА
                 #
-                # Ако има match:
+                # Предпочитаме mapping-а по модел,
+                # ако съществува.
                 #
-                # АБЕЙ -> ABBEY
-                #
-                # Ако няма match:
-                #
-                # използваме оригиналната марка от КАТ.
+                # Иначе използваме mapping-а само по марка.
                 # -------------------------------------------------
 
-                raw_df["Brand"] = raw_df["Clean_Brand"].where(
-                    raw_df["Clean_Brand"] != "",
-                    raw_df["Raw_Brand"]
+                raw_df["Brand"] = (
+                    raw_df["_Model_Clean_Brand"]
+                    .fillna("")
+                    .replace("", pd.NA)
+                    .fillna(raw_df["Clean_Brand"])
+                    .fillna(raw_df["Raw_Brand"])
+                    .astype(str)
+                    .str.strip()
                 )
 
 
                 # -------------------------------------------------
                 # ФИНАЛЕН МОДЕЛ
                 #
-                # Ако има match:
+                # Ако имаме точен match:
                 #
-                # ГТС 417 ВОГ -> GTS 417 Vogue
+                # ГТС 417 ВОГ
+                # ->
+                # GTS 417 Vogue
                 #
-                # Ако няма match:
-                #
-                # използваме оригиналния модел от КАТ.
+                # Ако нямаме:
+                # оставяме оригиналния модел.
                 # -------------------------------------------------
 
-                raw_df["Temp_Model"] = raw_df["Clean_Model"].where(
-                    raw_df["Clean_Model"] != "",
-                    raw_df["Raw_Model"]
+                raw_df["Temp_Model"] = (
+                    raw_df["_Model_Clean_Model"]
+                    .fillna("")
+                    .replace("", pd.NA)
+                    .fillna(raw_df["Raw_Model"])
+                    .astype(str)
+                    .str.strip()
                 )
 
 
                 # -------------------------------------------------
-                # Диагностика
+                # СТАТИСТИКА
                 # -------------------------------------------------
 
-                matched_rows = (
-                    (raw_df["Clean_Brand"] != "") |
-                    (raw_df["Clean_Model"] != "")
+                brand_matches = (
+                    raw_df["Clean_Brand"].fillna("").astype(str).str.strip() != ""
                 ).sum()
+
+
+                model_matches = (
+                    raw_df["_Model_Clean_Model"]
+                    .fillna("")
+                    .astype(str)
+                    .str.strip() != ""
+                ).sum()
+
 
                 total_rows = len(raw_df)
 
 
-                # Показваме само полезна информация
                 st.success(
                     f"✅ Речникът е зареден: "
                     f"{len(map_df):,} уникални комбинации | "
-                    f"Съпоставени записи: "
-                    f"{matched_rows:,} / {total_rows:,}"
+                    f"Марки: {brand_matches:,} / {total_rows:,} | "
+                    f"Модели: {model_matches:,} / {total_rows:,}"
                 )
+
 
         else:
 
@@ -655,17 +794,73 @@ def load_and_process(file_bytes_list, file_names, category_name):
             raw_df["Brand"] = raw_df["Raw_Brand"]
             raw_df["Temp_Model"] = raw_df["Raw_Model"]
 
+
     else:
 
         st.error(
             "❌ Файлът с речника НЕ е намерен!\n\n"
-            f"Очакван файл:\n{mapping_file}\n\n"
-            "Увери се, че структурата е:\n"
+            f"Очакван път:\n{mapping_file}\n\n"
+            "Очакван файл:\n"
             "data/brand_model_mapping_clean.csv"
         )
 
         raw_df["Brand"] = raw_df["Raw_Brand"]
         raw_df["Temp_Model"] = raw_df["Raw_Model"]
+
+
+    # ---------------------------------------------------------
+    # 3. ПОЧИСТВАНЕ НА МОДЕЛА
+    # ---------------------------------------------------------
+
+    def clean_fallback_model(b, m):
+
+        b = str(b).strip()
+        m = str(m).strip()
+
+        if (
+            m.upper().startswith(b.upper())
+            and len(m) > len(b)
+        ):
+            return m[len(b):].strip()
+
+        return m
+
+
+    raw_df["Model"] = [
+        clean_fallback_model(b, m)
+        for b, m in zip(
+            raw_df["Brand"],
+            raw_df["Temp_Model"]
+        )
+    ]
+
+
+    # ---------------------------------------------------------
+    # ФИНАЛЕН LABEL
+    # ---------------------------------------------------------
+
+    raw_df["Label"] = (
+        raw_df["Brand"].astype(str).str.strip()
+        + " "
+        + raw_df["Model"].astype(str).str.strip()
+    ).str.strip()
+
+
+    # ---------------------------------------------------------
+    # ПРЕМАХВАМЕ ТЕХНИЧЕСКИТЕ КОЛОНИ
+    # ---------------------------------------------------------
+
+    raw_df.drop(
+        columns=[
+            "_Brand_Key",
+            "_Model_Key",
+            "Clean_Brand",
+            "_Model_Clean_Brand",
+            "_Model_Clean_Model"
+        ],
+        errors="ignore",
+        inplace=True
+    )
 
 
     # ---------------------------------------------------------
