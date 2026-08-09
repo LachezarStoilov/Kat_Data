@@ -7,7 +7,7 @@ import os
 import glob
 
 # ====================================================================================
-# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V8 - Mobile UI/UX Overhaul)
+# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V9 - HTML & Layout Fix)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -182,27 +182,28 @@ svg_logo = """
 </svg>
 """
 
+# ВАЖНО: Тук няма интервали в началото, за да не се чете като код от Markdown!
 st.markdown(f"""
 <div class="hero-container">
-    <div class="hero-left">
-        <div class="hero-logo-box">
-            {svg_logo}
-        </div>
-        <div>
-            <div class="hero-title">AUTO MOTO SALES BG</div>
-            <div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
-        </div>
-    </div>
-    <div class="hero-right">
-        <div class="meta-badge">
-            <div class="meta-label">Статус на системата</div>
-            <div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
-        </div>
-        <div class="meta-badge">
-            <div class="meta-label">Източник</div>
-            <div class="meta-value">Официални данни КАТ</div>
-        </div>
-    </div>
+<div class="hero-left">
+<div class="hero-logo-box">
+{svg_logo}
+</div>
+<div>
+<div class="hero-title">AUTO MOTO SALES BG</div>
+<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
+</div>
+</div>
+<div class="hero-right">
+<div class="meta-badge">
+<div class="meta-label">Статус на системата</div>
+<div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
+</div>
+<div class="meta-badge">
+<div class="meta-label">Източник</div>
+<div class="meta-value">Официални данни КАТ</div>
+</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -460,8 +461,8 @@ with tab_brand:
     
     default_b = "ШКОДА" if "ШКОДА" in all_brands_list else all_brands_list[0]
     
-    # Филтрите са един под друг (по-чисто и на мобилен, и на десктоп)
-    selected_brand = st.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
+    col_b1, col_b2 = st.columns([1, 2])
+    selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
     
     if selected_brand and metric_brand:
@@ -513,8 +514,8 @@ with tab_model:
 
     available_brands = sorted(liquid_models["Brand"].unique())
     
-    # Филтрите са един под друг (по-чисто и на мобилен, и на десктоп)
-    sel_brand = st.selectbox("1. Филтър по марка (опционално):", options=["Всички марки"] + available_brands)
+    col_f1, col_f2 = st.columns([1, 2])
+    sel_brand = col_f1.selectbox("1. Филтър по марка (опционално):", options=["Всички марки"] + available_brands)
 
     if sel_brand == "Всички марки": available_labels = sorted(liquid_models["Label"].unique())
     else: available_labels = sorted(liquid_models[liquid_models["Brand"] == sel_brand]["Label"].unique())
@@ -523,7 +524,7 @@ with tab_model:
     def_models = [l for l in available_labels if any(t in l for t in target_models)]
     if not def_models and available_labels: def_models = [available_labels[0]]
 
-    sel_models = st.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
+    sel_models = col_f2.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
 
     st.markdown("<br>", unsafe_allow_html=True)
     metric_tab1 = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_model")
