@@ -573,9 +573,22 @@ def load_and_process(file_bytes_list, file_names, category_name):
                 )
 
 
-                # -------------------------------------------------
+
                 # НОРМАЛИЗИРАМЕ ДАННИТЕ ОТ КАТ
                 # -------------------------------------------------
+                
+                # 1. Функция за премахване на марката от началото на модела
+                def strip_raw_brand_from_model(brand, model):
+                    b = str(brand).strip().upper()
+                    m = str(model).strip().upper()
+                    if m.startswith(b) and len(m) > len(b):
+                        return m[len(b):].strip()
+                    return m
+
+                # 2. Създаваме временна колона с изчистен модел (напр. "ШКОДА ОКТАВИЯ" -> "ОКТАВИЯ")
+                raw_df["_Stripped_Raw_Model"] = raw_df.apply(
+                    lambda row: strip_raw_brand_from_model(row["Raw_Brand"], row["Raw_Model"]), axis=1
+                )
 
                 raw_df["_Brand_Key"] = raw_df["Raw_Brand"].apply(
                     lambda x: normalize_mapping_value(
@@ -584,7 +597,8 @@ def load_and_process(file_bytes_list, file_names, category_name):
                     )
                 )
 
-                raw_df["_Model_Key"] = raw_df["Raw_Model"].apply(
+                # 3. Генерираме ключа за модела от ИЗЧИСТЕНИЯ низ, за да съвпадне с речника
+                raw_df["_Model_Key"] = raw_df["_Stripped_Raw_Model"].apply(
                     lambda x: normalize_mapping_value(x)
                 )
 
@@ -751,7 +765,7 @@ def load_and_process(file_bytes_list, file_names, category_name):
                     raw_df["_Model_Clean_Model"]
                     .fillna("")
                     .replace("", pd.NA)
-                    .fillna(raw_df["Raw_Model"])
+                    .fillna(raw_df["_Stripped_Raw_Model"]) # Ползваме изчистения суров модел
                     .astype(str)
                     .str.strip()
                 )
