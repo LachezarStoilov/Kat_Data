@@ -351,27 +351,33 @@ def load_and_process(file_bytes_list, file_names, category_name):
     if os.path.exists(mapping_file):
         try:
             map_df = pd.read_csv(mapping_file, dtype=str, encoding="utf-8-sig")
-        except UnicodeDecodeError:
+        except:
             try:
                 map_df = pd.read_csv(mapping_file, dtype=str, encoding="utf-8")
-            except UnicodeDecodeError:
+            except:
                 map_df = pd.read_csv(mapping_file, dtype=str, encoding="cp1251")
         
-        # ЗАСТРАХОВКА 1: Изчистване на скрити интервали в имената на колоните
-        map_df.columns = [c.strip() for c in map_df.columns]
+        # 1. Агресивно изчистване на невидими символи (BOM) от имената на колоните
+        map_df.columns = [str(c).strip().replace('\ufeff', '') for c in map_df.columns]
         
-        # ЗАСТРАХОВКА 2: Уеднаквяване на текста (всичко с главни букви и без интервали), за да мачне на 100%
-        if "Raw_Brand" in map_df.columns and "Raw_Model" in map_df.columns:
+        if "Raw_Brand" in map_df.columns and "Clean_Brand" in map_df.columns:
+            # 2. Премахване на евентуални дубликати от рестартирането на AI скрипта
+            map_df = map_df.drop_duplicates(subset=["Raw_Brand", "Raw_Model"])
+            
+            # 3. Абсолютно изравняване на текста (главни букви, без празни места)
             map_df["Raw_Brand"] = map_df["Raw_Brand"].astype(str).str.strip().str.upper()
             map_df["Raw_Model"] = map_df["Raw_Model"].astype(str).str.strip().str.upper()
+            raw_df["Raw_Brand"] = raw_df["Raw_Brand"].astype(str).str.strip().str.upper()
+            raw_df["Raw_Model"] = raw_df["Raw_Model"].astype(str).str.strip().str.upper()
             
-            map_df = map_df.dropna(subset=["Clean_Brand", "Clean_Model"])
-            
-            # Сливаме базите
+            # 4. Сливане на данните
             raw_df = raw_df.merge(map_df[["Raw_Brand", "Raw_Model", "Clean_Brand", "Clean_Model"]], 
                                   on=["Raw_Brand", "Raw_Model"], how="left")
             
-            # Ако има превод от AI, ползваме го. Ако не, ползваме оригинала.
+            # 5. Зачистване на текстови 'nan' (ако AI е върнал празно) и прилагане на мапинга
+            for col in ["Clean_Brand", "Clean_Model"]:
+                raw_df[col] = raw_df[col].replace(['nan', 'NAN', 'None', ''], None)
+                
             raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
             raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
         else:
