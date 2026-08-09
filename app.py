@@ -201,27 +201,61 @@ text-align: right;
     }
 
     /* --------------------------------------------------------------
-       TABS: make them horizontally scrollable instead of being clipped
+       MOBILE ANALYSIS NAVIGATION
+       The 4 analysis tabs are NOT allowed to stay in one compressed
+       horizontal row. On phones they become a clean 2 x 2 grid.
+       Desktop remains the normal 4-tab Streamlit layout.
        -------------------------------------------------------------- */
     .stTabs [data-baseweb="tab-list"] {
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        flex-wrap: nowrap !important;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        grid-auto-rows: minmax(52px, auto) !important;
+        gap: 6px !important;
         width: 100% !important;
-    }
-
-    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
-        display: none;
+        overflow: visible !important;
+        padding: 4px !important;
+        box-sizing: border-box !important;
+        background: #f1f5f9 !important;
+        border-radius: 12px !important;
     }
 
     .stTabs [data-baseweb="tab"] {
-        flex: 0 0 auto !important;
-        white-space: nowrap !important;
-        min-width: max-content !important;
-        padding-left: 12px !important;
-        padding-right: 12px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        flex: none !important;
+        min-height: 50px !important;
+        height: auto !important;
+        padding: 9px 7px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+        border-radius: 9px !important;
+        white-space: normal !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        line-height: 1.15 !important;
+        font-size: 0.76rem !important;
+        font-weight: 600 !important;
+        color: #475569 !important;
+        background: transparent !important;
+    }
+
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: #ffffff !important;
+        color: #ef4444 !important;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10) !important;
+    }
+
+    .stTabs [data-baseweb="tab-highlight"] {
+        display: none !important;
+    }
+
+    .stTabs [data-baseweb="tab-border"] {
+        display: none !important;
     }
 
     /* Pills / segmented controls should never force the page wider */
