@@ -34,7 +34,7 @@ st.markdown("""
 
 :root {
     --ink: #14181f;
-    --panel: #33414a;
+    --panel: #4a5a66;
     --slate: #64748b;
     --border: #e2e8f0;
     --surface: #ffffff;
