@@ -219,7 +219,7 @@ def apply_plotly_mobile_lock(fig):
     fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False)
     return fig
 
-def kpi_card(col, label, value, sub=None, sub_color="#de9750", accent="#ba9b36"):
+def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#4f46e5"):
     sub_html = f'<div class="kpi-sub" style="color:{sub_color};">{sub}</div>' if sub else '<div class="kpi-sub">&nbsp;</div>'
     col.markdown(
         f'<div class="kpi-card" style="border-left-color:{accent};">'
