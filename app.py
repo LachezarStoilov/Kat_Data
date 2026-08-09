@@ -353,7 +353,7 @@ def load_and_process(file_bytes_list, file_names, category_name):
         st.success(f"✅ Успешно намерен речник: {mapping_file}")
         try:
             # Четем изрично с разделитель "|" и без да чупи заглавията
-            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="utf-8-sig", engine="python")
+            map_df = pd.read_csv(mapping_file, sep=",", dtype=str, encoding="utf-8-sig")
         except:
             map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="cp1251", engine="python")
         
