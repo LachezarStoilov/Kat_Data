@@ -1261,7 +1261,7 @@ with tab_model:
         fig.update_yaxes(fixedrange=True, range=[0, y_max_range]) # Фиксираме оста динамично
         fig.update_traces(cliponaxis=False) # Магическото спиране на изрязването
         
-        st.plotly_chart(fig, config=PLOTLY_CONFIG, use_container_width=True)
+        st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
 
         # -------------------------------------------------------------------------
         # НОВО: ДОБАВЯНЕ НА ДВА ПАЙ ЧАРТА (DONUT) ПОД ГРАФИКАТА
@@ -1287,7 +1287,7 @@ with tab_model:
             font=CHART_FONT,
             height=320
         )
-        pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, use_container_width=True)
+        pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, width="stretch")
         
         # 2. Втори чарт: Разбивка на състоянието (Нови/Употребявани/Пререгистрации) за всички избрани модели общо
         total_new = m_data["Нови"].sum()
@@ -1311,7 +1311,7 @@ with tab_model:
             font=CHART_FONT,
             height=320
         )
-        pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, use_container_width=True)
+        pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, width="stretch")
 
 with tab_new:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_NEW}">Пазарен дял и лидери (НОВИ МПС) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
