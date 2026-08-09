@@ -352,13 +352,19 @@ def load_and_process(file_bytes_list, file_names, category_name):
     if os.path.exists(mapping_file):
         st.success(f"✅ Успешно намерен речник: {mapping_file}")
         try:
-            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="utf-8-sig")
+            # Четем изрично с разделитель "|" и без да чупи заглавията
+            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="utf-8-sig", engine="python")
         except:
-            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="cp1251")
+            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="cp1251", engine="python")
         
-        map_df.columns = [str(c).strip().replace('\ufeff', '').replace('"', '') for c in map_df.columns]
+        # Почистване на заглавията на колоните от кавички и шпации
+        map_df.columns = [str(c).strip().replace('\ufeff', '').replace('"', '').replace("'", "") for c in map_df.columns]
         
-        if "Raw_Brand" in map_df.columns and "Clean_Brand" in map_df.columns:
+        # Премахваме празни редове, ако има такива
+        map_df = map_df.dropna(how="all")
+
+        # Проверка за имената на колоните
+        if any(c.strip() == "Raw_Brand" for c in map_df.columns) and any(c.strip() == "Clean_Brand" for c in map_df.columns):
             map_df = map_df.drop_duplicates(subset=["Raw_Brand", "Raw_Model"])
             
             map_df["Raw_Brand"] = map_df["Raw_Brand"].astype(str).str.strip().str.upper().str.replace('"', '')
@@ -375,7 +381,7 @@ def load_and_process(file_bytes_list, file_names, category_name):
             raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
             raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
         else:
-            st.warning("⚠️ Колоните 'Raw_Brand' или 'Clean_Brand' не бяха открити в CSV файла!")
+            st.warning(f"⚠️ Намерени колони в речника: {list(map_df.columns)}")
             raw_df["Brand"] = raw_df["Raw_Brand"]
             raw_df["Temp_Model"] = raw_df["Raw_Model"]
     else:
