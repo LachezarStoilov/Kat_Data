@@ -1058,16 +1058,25 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 
     fig = go.Figure()
 
+    # Намираме максималната стойност, за да мащабираме оста
+    max_val = curr_agg[metric].max() if not curr_agg.empty else 0
+
     if not df_prv.empty:
         prv_agg = df_prv.groupby("Месец")[metric].sum().reset_index().sort_values("Месец")
         prv_agg["Месец_Име"] = prv_agg["Месец"].map(month_names)
         fig.add_trace(go.Scatter(x=prv_agg["Месец_Име"], y=prv_agg[metric], name="Предходна година", mode="lines+markers",
                                  line=dict(color=color_prv, width=2, shape="spline", dash="dot"), marker=dict(size=6)))
+        
+        prv_max = prv_agg[metric].max() if not prv_agg.empty else 0
+        max_val = max(max_val, prv_max)
 
     fig.add_trace(go.Scatter(x=curr_agg["Месец_Име"], y=curr_agg[metric], name="Текущ период", mode="lines+markers+text",
                              text=curr_agg[metric], textposition="top center", textfont=dict(size=14, color=color_curr),
                              line=dict(color=color_curr, width=3, shape="spline"), marker=dict(size=8),
                              fill="tozeroy", fillcolor=f"rgba({get_rgb(color_curr)},0.08)"))
+
+    # Динамично увеличаване на горната граница на Y-оста с 15% за headroom
+    y_max_range = max_val * 1.15 if max_val > 0 else 10
 
     fig.update_layout(
         title=dict(text=title.upper(), font=TITLE_FONT),
@@ -1077,11 +1086,13 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
         font=CHART_FONT,
         hovermode="x unified",
         legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-        margin=dict(t=50, l=10, r=10, b=30)
+        margin=dict(t=65, l=10, r=10, b=30) # Леко увеличен горен марж (t)
     )
 
     fig.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names.values()))
-    fig.update_yaxes(fixedrange=True)
+    fig.update_yaxes(fixedrange=True, range=[0, y_max_range]) # Фиксираме Y-оста от 0 до новото макси
+    fig.update_traces(cliponaxis=False) # Позволява на текста да се визуализира дори на границата
+    
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key)
 
 # ----------------------------------------------------------------------------------
