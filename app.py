@@ -708,7 +708,7 @@ def load_and_process(file_bytes_list, file_names, category_name):
         + " "
         + raw_df["Model"].astype(str).str.strip()
     ).str.strip()
-```python
+
     # ---------------------------------------------------------
     # 3. АГРЕГИРАМЕ ЧИСТИТЕ ДАННИ
     # ---------------------------------------------------------
