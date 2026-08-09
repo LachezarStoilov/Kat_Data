@@ -34,6 +34,7 @@ st.markdown("""
 
 :root {
     --ink: #14181f;
+    --panel: #33414a;
     --slate: #64748b;
     --border: #e2e8f0;
     --surface: #ffffff;
@@ -53,7 +54,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 
 /* ================== HERO / DASHBOARD PANEL ================== */
 .hero-container {
-    background: var(--ink);
+    background: var(--panel);
     border-radius: 14px;
     padding: 1.75rem 2.25rem;
     margin-bottom: 1.5rem;
@@ -113,7 +114,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
     background: var(--tab-accent, var(--brand));
 }
 .kpi-label { font-size: 0.72rem; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
-.kpi-readout { margin-top: 0.5rem; display: inline-block; background: var(--ink); border-radius: 6px; padding: 0.32rem 0.65rem; }
+.kpi-readout { margin-top: 0.5rem; display: inline-block; background: var(--panel); border-radius: 6px; padding: 0.32rem 0.65rem; }
 .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; color: #f5c992; letter-spacing: 0.01em; }
 .kpi-sub { font-size: 0.8rem; font-weight: 600; margin-top: 6px; min-height: 1.2em; }
 
