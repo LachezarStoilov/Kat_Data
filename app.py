@@ -791,12 +791,12 @@ def load_and_process(file_bytes_list, file_names, category_name):
                 total_rows = len(raw_df)
 
 
-                st.success(
-                    f"✅ Речникът е зареден: "
-                    f"{len(map_df):,} уникални комбинации | "
-                    f"Марки: {brand_matches:,} / {total_rows:,} | "
-                    f"Модели: {model_matches:,} / {total_rows:,}"
-                )
+                # st.success(
+                #     f"✅ Речникът е зареден: "
+                #     f"{len(map_df):,} уникални комбинации | "
+                #     f"Марки: {brand_matches:,} / {total_rows:,} | "
+                #     f"Модели: {model_matches:,} / {total_rows:,}"
+                # )
 
 
         else:
@@ -1097,7 +1097,7 @@ with tab_brand:
     brand_volumes = df_working.groupby("Brand")["Всички"].sum()
     
     # 2. Намираме Топ 10 най-популярни марки
-    top_brands = brand_volumes.nlargest(10).index.tolist()
+    top_brands = brand_volumes.nlargest(15).index.tolist()
     
     # 3. Всички останали по азбучен ред
     other_brands = sorted([b for b in brand_volumes.index if b not in top_brands])
@@ -1178,7 +1178,7 @@ with tab_model:
     # --- НОВО: Mobile.bg стил филтър по марка ---
     available_brands_vols = liquid_models.groupby("Brand")["Всички"].sum()
     
-    top_filter_brands = available_brands_vols.nlargest(10).index.tolist()
+    top_filter_brands = available_brands_vols.nlargest(15).index.tolist()
     other_filter_brands = sorted([b for b in available_brands_vols.index if b not in top_filter_brands])
     
     ordered_filter_options = ["Всички марки"] + top_filter_brands + other_filter_brands
