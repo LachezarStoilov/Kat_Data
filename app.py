@@ -348,6 +348,12 @@ def load_and_process(file_bytes_list, file_names, category_name):
     # 2. ИНТЕГРИРАНЕ НА AI РЕЧНИКА
     # ---------------------------------------------------------
     mapping_file = os.path.join("data", "brand_model_mapping_clean.csv")
+    
+    # ТУК ДОБАВЯМЕ ТАЗИ ПРОВЕРКА:
+    if os.path.exists(mapping_file):
+        st.sidebar.success("Речникът е намерен!")
+    else:
+        st.sidebar.error(f"Файлът {mapping_file} НЕ е намерен в папка data!")
     if os.path.exists(mapping_file):
         try:
             # Указваме изрично sep="|" заради структурата на AI файла
