@@ -7,7 +7,7 @@ import os
 import glob
 
 # ====================================================================================
-# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V7 - Bugfix Release)
+# AUTO MOTO SALES BG - CLEAN EXECUTIVE EDITION (V8 - Mobile UI/UX Overhaul)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -18,61 +18,61 @@ st.markdown("""
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
 
 .hero-container {
-background-color: #ffffff;
-border: 1px solid #e2e8f0;
-border-radius: 12px;
-padding: 1.8rem 2.2rem;
-margin-bottom: 1.5rem;
-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 20px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.8rem 2.2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
 }
 
 .hero-left {
-display: flex;
-align-items: center;
-gap: 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .hero-logo-box {
-background: #e0e7ff;
-color: #4f46e5;
-border-radius: 12px;
-padding: 14px;
-display: flex;
-align-items: center;
-justify-content: center;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .hero-title {
-font-size: 2.2rem;
-font-weight: 800;
-color: #0f172a;
-margin: 0;
-line-height: 1.1;
-letter-spacing: -0.03em;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
 }
 
 .hero-sub {
-font-size: 0.95rem;
-color: #64748b;
-margin-top: 6px;
-font-weight: 500;
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-top: 6px;
+    font-weight: 500;
 }
 
 .hero-right {
-display: flex;
-gap: 12px;
+    display: flex;
+    gap: 12px;
 }
 
 .meta-badge {
-background: #f8fafc;
-border: 1px solid #e2e8f0;
-border-radius: 8px;
-padding: 10px 16px;
-text-align: right;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: right;
 }
 
 .meta-label { font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -99,211 +99,76 @@ text-align: right;
 
 /* ==========================================================================
    MOBILE / RESPONSIVE FIX
-   Streamlit's st.columns() uses a horizontal flex container. On a phone,
-   several 4-column / 2-column sections become too narrow and their content
-   appears shifted or overlaps. We deliberately stack ALL Streamlit columns
-   below 768px. Desktop remains unchanged.
    ========================================================================== */
 @media (max-width: 768px) {
     /* Page margins / horizontal overflow */
-    [data-testid="stAppViewContainer"] {
-        overflow-x: hidden !important;
-    }
-
-    [data-testid="stMainBlockContainer"] {
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-        max-width: 100% !important;
-    }
+    [data-testid="stAppViewContainer"] { overflow-x: hidden !important; }
+    [data-testid="stMainBlockContainer"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; max-width: 100% !important; }
 
     /* Header */
-    .hero-container {
-        flex-direction: column;
-        text-align: center;
-        padding: 1.25rem 0.85rem;
-        gap: 14px;
-    }
+    .hero-container { flex-direction: column; text-align: center; padding: 1.25rem 0.85rem; gap: 14px; }
+    .hero-left { flex-direction: column; gap: 10px; }
+    .hero-title { font-size: 1.55rem; line-height: 1.15; }
+    .hero-sub { font-size: 0.82rem; }
+    .hero-right { flex-direction: column; width: 100%; align-items: stretch; text-align: center; gap: 8px; }
+    .meta-badge { text-align: center; padding: 8px 10px; }
 
-    .hero-left {
-        flex-direction: column;
-        gap: 10px;
+    /* Stack every st.columns block on mobile */
+    [data-testid="stHorizontalBlock"], div[data-testid="stHorizontalBlock"], .stHorizontalBlock {
+        flex-direction: column !important; flex-wrap: nowrap !important; width: 100% !important; gap: 0.85rem !important; align-items: stretch !important;
     }
-
-    .hero-title {
-        font-size: 1.55rem;
-        line-height: 1.15;
-    }
-
-    .hero-sub {
-        font-size: 0.82rem;
-    }
-
-    .hero-right {
-        flex-direction: column;
-        width: 100%;
-        align-items: stretch;
-        text-align: center;
-        gap: 8px;
-    }
-
-    .meta-badge {
-        text-align: center;
-        padding: 8px 10px;
-    }
-
-    /* --------------------------------------------------------------
-       THE IMPORTANT FIX: STACK EVERY st.columns() BLOCK ON MOBILE
-       -------------------------------------------------------------- */
-    [data-testid="stHorizontalBlock"],
-    div[data-testid="stHorizontalBlock"] {
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 0.85rem !important;
-        align-items: stretch !important;
-    }
-
-    [data-testid="stHorizontalBlock"] > [data-testid="column"],
-    [data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        width: 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        flex: 1 1 100% !important;
-    }
-
-    /* Some Streamlit versions use this internal flex class instead of the
-       test-id above. Keep the fallback for compatibility. */
-    .stHorizontalBlock {
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        width: 100% !important;
-        gap: 0.85rem !important;
-    }
-
-    .stHorizontalBlock > div {
-        width: 100% !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-        flex: 1 1 100% !important;
+    [data-testid="stHorizontalBlock"] > [data-testid="column"], [data-testid="stHorizontalBlock"] > div[data-testid="column"], .stHorizontalBlock > div {
+        width: 100% !important; min-width: 100% !important; max-width: 100% !important; flex: 1 1 100% !important;
     }
 
     /* KPI cards: one per row, full width */
-    .kpi-card {
-        width: 100% !important;
-        box-sizing: border-box !important;
-        margin-bottom: 0 !important;
-        min-height: 100px;
-        padding: 1rem;
-    }
+    .kpi-card { width: 100% !important; box-sizing: border-box !important; margin-bottom: 0 !important; min-height: 100px; padding: 1rem; }
+    .kpi-value { font-size: 1.55rem; }
 
-    .kpi-value {
-        font-size: 1.55rem;
-    }
-
-    /* --------------------------------------------------------------
-       MOBILE ANALYSIS NAVIGATION
-       The 4 analysis tabs are NOT allowed to stay in one compressed
-       horizontal row. On phones they become a clean 2 x 2 grid.
-       Desktop remains the normal 4-tab Streamlit layout.
-       -------------------------------------------------------------- */
-    .stTabs [data-baseweb="tab-list"] {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        grid-auto-rows: minmax(52px, auto) !important;
-        gap: 6px !important;
-        width: 100% !important;
-        overflow: visible !important;
-        padding: 4px !important;
-        box-sizing: border-box !important;
-        background: #f1f5f9 !important;
-        border-radius: 12px !important;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        flex: none !important;
-        min-height: 50px !important;
-        height: auto !important;
-        padding: 9px 7px !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
-        border-radius: 9px !important;
-        white-space: normal !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
+    /* =====================================================
+       MOBILE TABS - SCROLLABLE FIX
+       ===================================================== */
+    div[data-baseweb="tab-list"] {
         display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        text-align: center !important;
-        line-height: 1.15 !important;
-        font-size: 0.76rem !important;
-        font-weight: 600 !important;
-        color: #475569 !important;
-        background: transparent !important;
-    }
-
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: #ffffff !important;
-        color: #ef4444 !important;
-        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.10) !important;
-    }
-
-    .stTabs [data-baseweb="tab-highlight"] {
-        display: none !important;
-    }
-
-    .stTabs [data-baseweb="tab-border"] {
-        display: none !important;
-    }
-
-    /* Pills / segmented controls should never force the page wider */
-    [data-testid="stPills"] {
-        max-width: 100% !important;
+        flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-    [data-testid="stPills"]::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Charts must stay inside the phone viewport */
-    [data-testid="stPlotlyChart"],
-    .js-plotly-plot,
-    .plot-container {
-        max-width: 100% !important;
         width: 100% !important;
-        overflow: hidden !important;
-    }
-
-    /* Tables: allow horizontal scrolling inside the table, not the page */
-    [data-testid="stDataFrame"] {
         max-width: 100% !important;
-        overflow-x: auto !important;
+        gap: 6px !important;
+        padding: 4px 2px 8px 2px !important;
+        scrollbar-width: none !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    /* Section headings */
-    .section-title {
-        font-size: 1.05rem;
-        line-height: 1.35;
-        margin-top: 1rem;
+    div[data-baseweb="tab-list"]::-webkit-scrollbar { display: none !important; }
+    div[data-baseweb="tab-list"] > div { display: flex !important; flex-wrap: nowrap !important; width: max-content !important; min-width: max-content !important; }
+
+    button[role="tab"] {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: max-content !important;
+        white-space: nowrap !important;
+        padding: 9px 13px !important;
+        margin: 0 !important;
+        border-radius: 8px !important;
+        font-size: 0.82rem !important;
+        line-height: 1.2 !important;
     }
 
-    /* Prevent long labels / model names from creating horizontal overflow */
-    .stMarkdown,
-    .stText,
-    label,
-    p,
-    h1, h2, h3, h4, h5, h6 {
-        max-width: 100%;
-        overflow-wrap: anywhere;
-    }
+    button[role="tab"] p { white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; margin: 0 !important; }
+
+    /* Pills / segmented controls */
+    [data-testid="stPills"] { max-width: 100% !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    [data-testid="stPills"]::-webkit-scrollbar { display: none; }
+
+    /* Charts & Tables */
+    [data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container { max-width: 100% !important; width: 100% !important; overflow: hidden !important; }
+    [data-testid="stDataFrame"] { max-width: 100% !important; overflow-x: auto !important; }
+    
+    .section-title { font-size: 1.05rem; line-height: 1.35; margin-top: 1rem; }
+    .stMarkdown, .stText, label, p, h1, h2, h3, h4, h5, h6 { max-width: 100%; overflow-wrap: anywhere; }
 }
-
 header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -319,28 +184,31 @@ svg_logo = """
 
 st.markdown(f"""
 <div class="hero-container">
-<div class="hero-left">
-<div class="hero-logo-box">
-{svg_logo}
-</div>
-<div>
-<div class="hero-title">AUTOMOTIVE SALES BG</div>
-<div class="hero-sub">Портал за анализ на регистрациите на МПС v0.9</div>
-</div>
-</div>
-<div class="hero-right">
-<div class="meta-badge">
-<div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Данни от 01.01.2025 до 31.07.2026 </div>
-</div>
-<div class="meta-badge">
-<div class="meta-label">Източник</div>
-<div class="meta-value">Официални данни КАТ</div>
-</div>
-</div>
+    <div class="hero-left">
+        <div class="hero-logo-box">
+            {svg_logo}
+        </div>
+        <div>
+            <div class="hero-title">AUTO MOTO SALES BG</div>
+            <div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="meta-badge">
+            <div class="meta-label">Статус на системата</div>
+            <div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
+        </div>
+        <div class="meta-badge">
+            <div class="meta-label">Източник</div>
+            <div class="meta-value">Официални данни КАТ</div>
+        </div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
+# ----------------------------------------------------------------------------------
+# ПОМОЩНИ ФУНКЦИИ И КОНФИГУРАЦИИ ЗА ПЛОТЛИ (Мобилна оптимизация)
+# ----------------------------------------------------------------------------------
 PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False}
 
 def apply_plotly_mobile_lock(fig):
@@ -364,6 +232,9 @@ def get_rgb(hex_col):
     h = hex_col.lstrip('#')
     return ",".join(str(int(h[i:i+2], 16)) for i in (0, 2, 4))
 
+# ----------------------------------------------------------------------------------
+# 1. ГЛАВНО МЕНЮ И ВРЕМЕВИ ПРОЗОРЕЦ 
+# ----------------------------------------------------------------------------------
 VEHICLE_CATEGORIES = {
     "Леки автомобили (M1)": ["M1"],
     "Лекотоварни (N1)": ["N1"],
@@ -378,6 +249,9 @@ with col_cat:
     selected_cat = st.pills("Категория", options=list(VEHICLE_CATEGORIES.keys()), default="Леки автомобили (M1)", label_visibility="collapsed")
 if not selected_cat: st.stop()
 
+# ----------------------------------------------------------------------------------
+# 2. ОПТИМИЗИРАНА ОБРАБОТКА И ФИЛТРИРАНЕ НА КАТЕГОРИИ
+# ----------------------------------------------------------------------------------
 SUMMARY_ROW_PATTERN = r"ОБЩ|ВСИЧК|TOTAL|SUM"
 
 @st.cache_data(show_spinner=False)
@@ -474,6 +348,9 @@ if df_full is None or df_full.empty:
     st.error(f"Няма налични данни за категория '{selected_cat}'.")
     st.stop()
 
+# ----------------------------------------------------------------------------------
+# ВРЕМЕВИ ПРОЗОРЕЦ 
+# ----------------------------------------------------------------------------------
 unique_periods = df_full[["Sort_Index", "Период"]].drop_duplicates().sort_values("Sort_Index")
 p_opts = unique_periods["Sort_Index"].tolist()
 p_lbls = unique_periods["Период"].tolist()
@@ -573,18 +450,18 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key)
 
 # ----------------------------------------------------------------------------------
-# 4. ТАБОВЕ ЗА АНАЛИЗ 
+# 4. ТАБОВЕ ЗА АНАЛИЗ (Съкратени имена за по-добър мобилен изглед)
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚘🚗 Пазар НОВИ МПС", "♻️ ВТОРИЧЕН Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 МАРКИ", "🔍 МОДЕЛИ", "🚘 НОВИ", "♻️ ВТОРИЧЕН"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
     all_brands_list = sorted(df_working["Brand"].unique())
     
-    col_b1, col_b2 = st.columns([1, 2])
     default_b = "ШКОДА" if "ШКОДА" in all_brands_list else all_brands_list[0]
     
-    selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
+    # Филтрите са един под друг (по-чисто и на мобилен, и на десктоп)
+    selected_brand = st.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
     
     if selected_brand and metric_brand:
@@ -634,9 +511,10 @@ with tab_model:
     model_volumes = df_working.groupby(["Brand", "Label"])["Всички"].sum().reset_index()
     liquid_models = model_volumes[model_volumes["Всички"] >= 5]
 
-    col_f1, col_f2 = st.columns([1, 2])
     available_brands = sorted(liquid_models["Brand"].unique())
-    sel_brand = col_f1.selectbox("1. Филтър по марка (опционално):", options=["Всички марки"] + available_brands)
+    
+    # Филтрите са един под друг (по-чисто и на мобилен, и на десктоп)
+    sel_brand = st.selectbox("1. Филтър по марка (опционално):", options=["Всички марки"] + available_brands)
 
     if sel_brand == "Всички марки": available_labels = sorted(liquid_models["Label"].unique())
     else: available_labels = sorted(liquid_models[liquid_models["Brand"] == sel_brand]["Label"].unique())
@@ -645,7 +523,7 @@ with tab_model:
     def_models = [l for l in available_labels if any(t in l for t in target_models)]
     if not def_models and available_labels: def_models = [available_labels[0]]
 
-    sel_models = col_f2.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
+    sel_models = st.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
 
     st.markdown("<br>", unsafe_allow_html=True)
     metric_tab1 = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_model")
