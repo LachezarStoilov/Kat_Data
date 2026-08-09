@@ -191,13 +191,13 @@ st.markdown(f"""
 </div>
 <div>
 <div class="hero-title">AUTO MOTO SALES BG</div>
-<div class="hero-sub">Професионален BI портал за анализ на регистрациите на МПС</div>
+<div class="hero-sub">Ппортал за анализ на регистрациите на МПС</div>
 </div>
 </div>
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value" style="color: #10b981;">🟢 Оптимизиран режим</div>
+<div class="meta-value" style="color: #10b981;">🟢Данни от 01.01.2025 до 31.07.2026 </div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
