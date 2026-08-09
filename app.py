@@ -1228,7 +1228,7 @@ with tab_model:
         m_data = df_working[df_working["Label"].isin(sel_models)].sort_values("Sort_Index")
         fig = go.Figure()
         # Добавени са още цветове в палитрата, в случай че избереш повече от 5 модела
-        colors = ["#0f5257", "#b45309", "#2563a6", "#6b7a3a", "#8c3a4b", "#9c2a46", "#e08924"]
+        colors = ["#3B82F6", "#F97316", "#10B981", "#EC4899", "#8B5CF6", "#06B6D4", "#F59E0B"]
 
         max_val = 0 # Променлива за изчисляване на тавана на графиката
 
@@ -1296,7 +1296,7 @@ with tab_model:
         
         status_labels = ["Нови", "Употребявани", "Пререгистрации"]
         status_values = [total_new, total_used, total_rereg]
-        status_colors = [TAB_ACCENT_NEW, TAB_ACCENT_USED, "#64748b"] # Ползваме твоите CSS цветове
+        status_colors = ["#F59E0B", "#3B82F6", "#8B5CF6"] # Ползваме твоите CSS цветове
         
         fig_pie_2 = go.Figure(go.Pie(
             labels=status_labels, 
@@ -1305,7 +1305,7 @@ with tab_model:
             marker=dict(colors=status_colors)
         ))
         fig_pie_2.update_layout(
-            title=dict(text="Разбивка по тип (Общо за селекцията)", font=TITLE_FONT, x=0.5),
+            title=dict(text="Общо за селекцията", font=TITLE_FONT, x=0.5),
             margin=dict(t=40, b=10, l=10, r=10),
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
             font=CHART_FONT,
