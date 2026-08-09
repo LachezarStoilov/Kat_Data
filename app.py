@@ -349,22 +349,13 @@ def load_and_process(file_bytes_list, file_names, category_name):
     # ---------------------------------------------------------
     mapping_file = os.path.join("data", "brand_model_mapping_clean.csv")
     
-    # ТУК ДОБАВЯМЕ ТАЗИ ПРОВЕРКА:
     if os.path.exists(mapping_file):
-        st.sidebar.success("Речникът е намерен!")
-    else:
-        st.sidebar.error(f"Файлът {mapping_file} НЕ е намерен в папка data!")
-    if os.path.exists(mapping_file):
+        st.success(f"✅ Успешно намерен речник: {mapping_file}")
         try:
-            # Указваме изрично sep="|" заради структурата на AI файла
             map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="utf-8-sig")
         except:
-            try:
-                map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="utf-8")
-            except:
-                map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="cp1251")
+            map_df = pd.read_csv(mapping_file, sep="|", dtype=str, encoding="cp1251")
         
-        # Почистване на имена на колони и кавички, ако има такива
         map_df.columns = [str(c).strip().replace('\ufeff', '').replace('"', '') for c in map_df.columns]
         
         if "Raw_Brand" in map_df.columns and "Clean_Brand" in map_df.columns:
@@ -384,9 +375,11 @@ def load_and_process(file_bytes_list, file_names, category_name):
             raw_df["Brand"] = raw_df["Clean_Brand"].fillna(raw_df["Raw_Brand"])
             raw_df["Temp_Model"] = raw_df["Clean_Model"].fillna(raw_df["Raw_Model"])
         else:
+            st.warning("⚠️ Колоните 'Raw_Brand' или 'Clean_Brand' не бяха открити в CSV файла!")
             raw_df["Brand"] = raw_df["Raw_Brand"]
             raw_df["Temp_Model"] = raw_df["Raw_Model"]
     else:
+        st.error(f"❌ Файлът {mapping_file} НЕ е намерен от приложението!")
         raw_df["Brand"] = raw_df["Raw_Brand"]
         raw_df["Temp_Model"] = raw_df["Raw_Model"]
 
