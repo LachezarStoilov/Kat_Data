@@ -97,12 +97,177 @@ text-align: right;
 
 .section-title { font-size: 1.2rem; font-weight: 700; color:#1e293b; margin: 1.5rem 0 1rem 0; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;}
 
+/* ==========================================================================
+   MOBILE / RESPONSIVE FIX
+   Streamlit's st.columns() uses a horizontal flex container. On a phone,
+   several 4-column / 2-column sections become too narrow and their content
+   appears shifted or overlaps. We deliberately stack ALL Streamlit columns
+   below 768px. Desktop remains unchanged.
+   ========================================================================== */
 @media (max-width: 768px) {
-.hero-container { flex-direction: column; text-align: center; padding: 1.5rem 1rem; }
-.hero-left { flex-direction: column; }
-.hero-right { flex-direction: column; width: 100%; align-items: stretch; text-align: center; }
-.meta-badge { text-align: center; }
-.kpi-card { margin-bottom: 15px; min-height: auto; }
+    /* Page margins / horizontal overflow */
+    [data-testid="stAppViewContainer"] {
+        overflow-x: hidden !important;
+    }
+
+    [data-testid="stMainBlockContainer"] {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+        max-width: 100% !important;
+    }
+
+    /* Header */
+    .hero-container {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.25rem 0.85rem;
+        gap: 14px;
+    }
+
+    .hero-left {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .hero-title {
+        font-size: 1.55rem;
+        line-height: 1.15;
+    }
+
+    .hero-sub {
+        font-size: 0.82rem;
+    }
+
+    .hero-right {
+        flex-direction: column;
+        width: 100%;
+        align-items: stretch;
+        text-align: center;
+        gap: 8px;
+    }
+
+    .meta-badge {
+        text-align: center;
+        padding: 8px 10px;
+    }
+
+    /* --------------------------------------------------------------
+       THE IMPORTANT FIX: STACK EVERY st.columns() BLOCK ON MOBILE
+       -------------------------------------------------------------- */
+    [data-testid="stHorizontalBlock"],
+    div[data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 0.85rem !important;
+        align-items: stretch !important;
+    }
+
+    [data-testid="stHorizontalBlock"] > [data-testid="column"],
+    [data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* Some Streamlit versions use this internal flex class instead of the
+       test-id above. Keep the fallback for compatibility. */
+    .stHorizontalBlock {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        gap: 0.85rem !important;
+    }
+
+    .stHorizontalBlock > div {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+
+    /* KPI cards: one per row, full width */
+    .kpi-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        margin-bottom: 0 !important;
+        min-height: 100px;
+        padding: 1rem;
+    }
+
+    .kpi-value {
+        font-size: 1.55rem;
+    }
+
+    /* --------------------------------------------------------------
+       TABS: make them horizontally scrollable instead of being clipped
+       -------------------------------------------------------------- */
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        width: 100% !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        min-width: max-content !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /* Pills / segmented controls should never force the page wider */
+    [data-testid="stPills"] {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    [data-testid="stPills"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Charts must stay inside the phone viewport */
+    [data-testid="stPlotlyChart"],
+    .js-plotly-plot,
+    .plot-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    /* Tables: allow horizontal scrolling inside the table, not the page */
+    [data-testid="stDataFrame"] {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+    }
+
+    /* Section headings */
+    .section-title {
+        font-size: 1.05rem;
+        line-height: 1.35;
+        margin-top: 1rem;
+    }
+
+    /* Prevent long labels / model names from creating horizontal overflow */
+    .stMarkdown,
+    .stText,
+    label,
+    p,
+    h1, h2, h3, h4, h5, h6 {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
 }
 
 header { visibility: hidden; }
@@ -334,9 +499,9 @@ def render_kpi_growth(col, label, current_total, prev_total, accent):
     if growth_pct is None:
         kpi_card(col, label, "—", sub="Няма данни", accent="#94a3b8")
     elif growth_pct >= 0:
-        kpi_card(col, label, f"+{growth_pct:.1f}%", sub=f"🟢⬆ спрямо {prev_period_label}", sub_color="#10B981", accent=accent)
+        kpi_card(col, label, f"+{growth_pct:.1f}%", sub=f"📈 спрямо {prev_period_label}", sub_color="#10B981", accent=accent)
     else:
-        kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"🔴⬇ спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
+        kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"📉 спрямо {prev_period_label}", sub_color="#EF4444", accent=accent)
 
 def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, color_prv="#9ca3af"):
     if df_curr.empty:
@@ -376,7 +541,7 @@ def render_yoy_trend_chart(df_curr, df_prv, metric, title, key, color_curr, colo
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ 
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["🔍МАРКИ", "📌​МОДЕЛИ", "🚘НОВИ МПС", "♻️Вторичен Пазар"])
+tab_brand, tab_model, tab_new, tab_used = st.tabs(["📌 Анализ по МАРКИ", "🔍 Анализ по МОДЕЛИ", "🚘🚗 Пазар НОВИ МПС", "♻️ ВТОРИЧЕН Пазар"])
 
 with tab_brand:
     st.markdown('<div class="section-title">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
