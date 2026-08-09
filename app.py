@@ -1175,14 +1175,35 @@ with tab_model:
     model_volumes = df_working.groupby(["Brand", "Label"])["Всички"].sum().reset_index()
     liquid_models = model_volumes[model_volumes["Всички"] >= 5]
 
-    available_brands = sorted(liquid_models["Brand"].unique())
+    # --- НОВО: Mobile.bg стил филтър по марка ---
+    available_brands_vols = liquid_models.groupby("Brand")["Всички"].sum()
+    
+    top_filter_brands = available_brands_vols.nlargest(10).index.tolist()
+    other_filter_brands = sorted([b for b in available_brands_vols.index if b not in top_filter_brands])
+    
+    ordered_filter_options = ["Всички марки"] + top_filter_brands + other_filter_brands
+
+    def format_filter_brand(b):
+        if b == "Всички марки":
+            return "🌐 Всички марки"
+        vol = available_brands_vols.get(b, 0)
+        vol_str = f"{vol:,.0f}".replace(",", " ")
+        if b in top_filter_brands:
+            return f"⭐ {b} ({vol_str})"
+        return f"{b} ({vol_str})"
 
     col_f1, col_f2 = st.columns([1, 2])
-    sel_brand = col_f1.selectbox("1. Филтър по марка (опционално):", options=["Всички марки"] + available_brands)
+    
+    sel_brand = col_f1.selectbox(
+        "1. Филтър по марка (опционално):", 
+        options=ordered_filter_options,
+        format_func=format_filter_brand
+    )
 
     if sel_brand == "Всички марки": available_labels = sorted(liquid_models["Label"].unique())
     else: available_labels = sorted(liquid_models[liquid_models["Brand"] == sel_brand]["Label"].unique())
 
+    # ... надолу кодът ти остава напълно същият ...
     target_models = ["SKODA Kodiaq", "VOLKSWAGEN Tayron", "HYUNDAI Santa Fe", "KIA Sorento"]
     def_models = [l for l in available_labels if any(t in l for t in target_models)]
     if not def_models and available_labels: def_models = [available_labels[0]]
