@@ -708,8 +708,52 @@ def load_and_process(file_bytes_list, file_names, category_name):
         + " "
         + raw_df["Model"].astype(str).str.strip()
     ).str.strip()
+```python
+    # ---------------------------------------------------------
+    # 3. АГРЕГИРАМЕ ЧИСТИТЕ ДАННИ
+    # ---------------------------------------------------------
+
+    agg_df = raw_df.groupby(
+        [
+            "Sort_Index",
+            "Година",
+            "Месец",
+            "Период",
+            "Brand",
+            "Model",
+            "Label"
+        ],
+        as_index=False
+    )[["Нови", "Употр", "Други"]].sum()
+
+
+    agg_df = agg_df.sort_values(
+        by=[
+            "Sort_Index",
+            "Brand",
+            "Model"
+        ]
+    )
+
+
+    for col in ["Нови", "Употр", "Други"]:
+
+        agg_df[f"{col}_Месец"] = (
+            agg_df
+            .groupby(
+                [
+                    "Година",
+                    "Brand",
+                    "Model"
+                ]
+            )[col]
+            .diff()
+            .fillna(agg_df[col])
+            .clip(lower=0)
+        )
 
     return agg_df
+    
 
 csv_files = glob.glob(os.path.join("data", "*.csv")) + glob.glob(os.path.join("data", "*.gz")) + glob.glob(os.path.join("data", "*.zip"))
 
