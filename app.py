@@ -1091,15 +1091,44 @@ tab_brand, tab_model, tab_new, tab_used = st.tabs(["МАРКИ", "МОДЕЛИ",
 
 with tab_brand:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_BRAND}">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
-    all_brands_list = sorted(df_working["Brand"].unique())
+    
+    # --- НОВО: Логика за Mobile.bg стил падащо меню ---
+    # 1. Изчисляваме общия брой регистрации за всяка марка
+    brand_volumes = df_working.groupby("Brand")["Всички"].sum()
+    
+    # 2. Намираме Топ 10 най-популярни марки
+    top_brands = brand_volumes.nlargest(10).index.tolist()
+    
+    # 3. Всички останали по азбучен ред
+    other_brands = sorted([b for b in brand_volumes.index if b not in top_brands])
+    
+    # 4. Обединяваме ги (първо Топ 10, после останалите)
+    ordered_brands = top_brands + other_brands
+    
+    # 5. Функция, която добавя звездичка и бройка към името в менюто
+    def format_brand_option(brand):
+        vol = brand_volumes.get(brand, 0)
+        vol_str = f"{vol:,.0f}".replace(",", " ")
+        if brand in top_brands:
+            return f"⭐ {brand} ({vol_str})"
+        else:
+            return f"{brand} ({vol_str})"
 
-    default_b = "SKODA" if "SKODA" in all_brands_list else all_brands_list[0]
+    default_b = "SKODA" if "SKODA" in ordered_brands else ordered_brands[0]
 
     col_b1, col_b2 = st.columns([1, 2])
-    selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=all_brands_list, index=all_brands_list.index(default_b))
+    
+    # Използваме format_func, за да визуализираме данните красиво
+    selected_brand = col_b1.selectbox(
+        "Избери марка за детайлен преглед:", 
+        options=ordered_brands, 
+        index=ordered_brands.index(default_b),
+        format_func=format_brand_option
+    )
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
 
     if selected_brand and metric_brand:
+        # ... надолу кодът ти остава напълно същият ...
         brand_data = df_working[df_working["Brand"] == selected_brand]
         brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_working.columns)
 
