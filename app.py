@@ -1227,20 +1227,91 @@ with tab_model:
     if sel_models and metric_tab1:
         m_data = df_working[df_working["Label"].isin(sel_models)].sort_values("Sort_Index")
         fig = go.Figure()
-        colors = ["#0f5257", "#b45309", "#2563a6", "#6b7a3a", "#8c3a4b"]
+        # Добавени са още цветове в палитрата, в случай че избереш повече от 5 модела
+        colors = ["#0f5257", "#b45309", "#2563a6", "#6b7a3a", "#8c3a4b", "#9c2a46", "#e08924"]
+
+        max_val = 0 # Променлива за изчисляване на тавана на графиката
 
         for i, model in enumerate(sel_models):
             model_df = m_data[m_data["Label"] == model]
+            
+            # Намираме най-високата точка за конкретния модел и я сравняваме с общия максимум
+            current_max = model_df[metric_tab1].max() if not model_df.empty else 0
+            max_val = max(max_val, current_max)
+            
             fig.add_trace(go.Scatter(
                 x=model_df["Период"], y=model_df[metric_tab1], name=model, mode="lines+markers+text",
                 text=model_df[metric_tab1], textposition="top center", textfont=dict(size=14, color=colors[i % len(colors)]),
                 line=dict(width=3, shape="spline", color=colors[i % len(colors)]), marker=dict(size=8)
             ))
 
-        fig.update_layout(template="plotly_white", height=400, font=CHART_FONT, hovermode="x unified", legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), margin=dict(t=20, l=10, r=10, b=30), dragmode=False)
+        # Динамичен таван + 15% толеранс, за да не се режат етикетите
+        y_max_range = max_val * 1.15 if max_val > 0 else 10
+
+        fig.update_layout(
+            template="plotly_white", 
+            height=400, 
+            font=CHART_FONT, 
+            hovermode="x unified", 
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), 
+            margin=dict(t=50, l=10, r=10, b=30), # Увеличен горен марж (t=50)
+            dragmode=False
+        )
         fig.update_xaxes(fixedrange=True)
-        fig.update_yaxes(fixedrange=True)
-        st.plotly_chart(fig, config=PLOTLY_CONFIG)
+        fig.update_yaxes(fixedrange=True, range=[0, y_max_range]) # Фиксираме оста динамично
+        fig.update_traces(cliponaxis=False) # Магическото спиране на изрязването
+        
+        st.plotly_chart(fig, config=PLOTLY_CONFIG, use_container_width=True)
+
+        # -------------------------------------------------------------------------
+        # НОВО: ДОБАВЯНЕ НА ДВА ПАЙ ЧАРТА (DONUT) ПОД ГРАФИКАТА
+        # -------------------------------------------------------------------------
+        st.markdown("<br><div class='section-title' style='--tab-accent:#64748b; font-size:0.95rem;'>СТРУКТУРА НА СЕЛЕКЦИЯТА ЗА ПЕРИОДА</div>", unsafe_allow_html=True)
+        
+        pc1, pc2 = st.columns(2)
+        
+        # 1. Първи чарт: Разпределение на продажбите (за избраната метрика) между маркираните модели
+        pie_data_models = m_data.groupby("Label")[metric_tab1].sum().reset_index()
+        pie_data_models = pie_data_models[pie_data_models[metric_tab1] > 0] # Махаме тези с 0 продажби
+        
+        fig_pie_1 = go.Figure(go.Pie(
+            labels=pie_data_models["Label"], 
+            values=pie_data_models[metric_tab1],
+            hole=0.45, 
+            marker=dict(colors=colors[:len(pie_data_models)])
+        ))
+        fig_pie_1.update_layout(
+            title=dict(text=f"Дял продажби ({metric_tab1})", font=TITLE_FONT, x=0.5),
+            margin=dict(t=40, b=10, l=10, r=10),
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            font=CHART_FONT,
+            height=320
+        )
+        pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, use_container_width=True)
+        
+        # 2. Втори чарт: Разбивка на състоянието (Нови/Употребявани/Пререгистрации) за всички избрани модели общо
+        total_new = m_data["Нови"].sum()
+        total_used = m_data["Употребявани"].sum()
+        total_rereg = m_data["Пререгистрации"].sum()
+        
+        status_labels = ["Нови", "Употребявани", "Пререгистрации"]
+        status_values = [total_new, total_used, total_rereg]
+        status_colors = [TAB_ACCENT_NEW, TAB_ACCENT_USED, "#64748b"] # Ползваме твоите CSS цветове
+        
+        fig_pie_2 = go.Figure(go.Pie(
+            labels=status_labels, 
+            values=status_values,
+            hole=0.45,
+            marker=dict(colors=status_colors)
+        ))
+        fig_pie_2.update_layout(
+            title=dict(text="Разбивка по тип (Общо за селекцията)", font=TITLE_FONT, x=0.5),
+            margin=dict(t=40, b=10, l=10, r=10),
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            font=CHART_FONT,
+            height=320
+        )
+        pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, use_container_width=True)
 
 with tab_new:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_NEW}">Пазарен дял и лидери (НОВИ МПС) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
