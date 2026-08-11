@@ -10,9 +10,6 @@ import unicodedata
 # ====================================================================================
 # AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V10 - Multi-Year BI Upgrade)
 # ====================================================================================
-# Design direction: instrument-cluster / trip-computer aesthetic grounded in the
-# subject (vehicle registration data).
-# ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wide")
 
@@ -20,8 +17,8 @@ st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wi
 # ДИЗАЙН ТОКЕНИ (цвят / типография)
 # ----------------------------------------------------------------------------------
 TAB_ACCENT_BRAND = "#0f5257"   # тъмен петрол-тийл - раздел МАРКИ
-TAB_ACCENT_MODEL = "#334155"  # неутрален графит - раздел МОДЕЛИ (сравнение между марки)
-TAB_ACCENT_NEW = "#b45309"    # кехлибар/ръжда - раздел НОВИ (showroom акцент)
+TAB_ACCENT_MODEL = "#334155"  # неутрален графит - раздел МОДЕЛИ
+TAB_ACCENT_NEW = "#b45309"    # кехлибар/ръжда - раздел НОВИ
 TAB_ACCENT_USED = "#2563a6"   # стоманено синьо - раздел ВТОРИЧЕН ПАЗАР
 
 CHART_FONT = dict(family="Manrope, sans-serif", size=12, color="#14181f")
@@ -215,7 +212,7 @@ st.markdown(f"""
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value"><span class="status-dot"></span>База данни: 2023 - 2026</div>
+<div class="meta-value"><span class="status-dot"></span>Данни: 01.2022 до 07.2026</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -249,10 +246,6 @@ def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257")
 
 def fmt_num(x): return f"{x:,.0f}".replace(",", " ")
 
-def get_rgb(hex_col):
-    h = hex_col.lstrip('#')
-    return ",".join(str(int(h[i:i+2], 16)) for i in (0, 2, 4))
-
 def get_growth_data(current, previous):
     if previous is None or pd.isna(previous) or previous == 0: return None
     return (current - previous) / previous * 100
@@ -268,7 +261,7 @@ def render_kpi_growth(col, label, current_total, prev_total, accent, prev_label=
         kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"▼ {sub_text}", sub_color="#b91c1c", accent=accent)
 
 # ----------------------------------------------------------------------------------
-# НОВА МУЛТИ-ГОДИШНА ГРАФИКА ЗА СЕЗОННОСТ И ТРЕНД (2022-2026)
+# МУЛТИ-ГОДИШНА ГРАФИКА ЗА СЕЗОННОСТ И ТРЕНД
 # ----------------------------------------------------------------------------------
 def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f5257"):
     if df_input.empty:
@@ -331,7 +324,7 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key, width="stretch")
 
 # ----------------------------------------------------------------------------------
-# 1. ГЛАВНО МЕНЮ И ВРЕМЕВИ ПРОЗОРЕЦ
+# 1. ГЛАВНО МЕНЮ
 # ----------------------------------------------------------------------------------
 VEHICLE_CATEGORIES = {
     "Леки автомобили (M1)": ["M1"],
@@ -348,7 +341,7 @@ with col_cat:
 if not selected_cat: st.stop()
 
 # ----------------------------------------------------------------------------------
-# 2. ОПТИМИЗИРАНА ОБРАБОТКА И ФИЛТРИРАНЕ НА КАТЕГОРИИ
+# 2. ОБРАБОТКА НА ДАННИ
 # ----------------------------------------------------------------------------------
 SUMMARY_ROW_PATTERN = r"ОБЩ|ВСИЧК|TOTAL|SUM"
 
@@ -416,7 +409,6 @@ def load_and_process(file_bytes_list, file_names, category_name):
     if not all_dfs: return None
     raw_df = pd.concat(all_dfs, ignore_index=True)
 
-    # ИНТЕГРИРАНЕ НА РЕЧНИКА ЗА МАРКИ И МОДЕЛИ
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     mapping_file = os.path.join(BASE_DIR, "data", "brand_model_mapping_clean.csv")
 
@@ -555,7 +547,7 @@ if df_full is None or df_full.empty:
     st.stop()
 
 # ----------------------------------------------------------------------------------
-# ВРЕМЕВИ ПРОЗОРЕЦ И РЕЖИМ НА АНАЛИЗ (2022 - 2026+)
+# ВРЕМЕВИ ПРОЗОРЕЦ И РЕЖИМ НА АНАЛИЗ (КОРИГИРАНА LOGIKA ЗА KPI & YOY)
 # ----------------------------------------------------------------------------------
 available_years = sorted(df_full["Година"].unique().tolist(), reverse=True)
 unique_periods = df_full[["Sort_Index", "Период"]].drop_duplicates().sort_values("Sort_Index")
@@ -576,7 +568,7 @@ with col_time:
         default_yrs = [y for y in [2026, 2025] if y in available_years]
         if not default_yrs and available_years:
             default_yrs = [available_years[0]]
-            
+
         selected_years = st.multiselect(
             "Избери години за сравнение:",
             options=available_years,
@@ -585,18 +577,31 @@ with col_time:
         if not selected_years:
             st.warning("Моля, изберете поне една година.")
             st.stop()
-        
+
+        # df_working за мулти-годишната тренд графика
         df_working = df_full[df_full["Година"].isin(selected_years)].copy()
-        
-        prev_years = [y - 1 for y in selected_years if (y - 1) in available_years]
-        curr_months = df_working["Месец"].unique()
-        df_prev = df_full[(df_full["Година"].isin(prev_years)) & (df_full["Месец"].isin(curr_months))].copy()
-        
-        has_prev_period = not df_prev.empty
-        start_period_str = f"{min(selected_years)}"
-        end_period_str = f"{max(selected_years)}"
-        period_label_full = ", ".join(map(str, sorted(selected_years)))
-        prev_period_label = ", ".join(map(str, sorted(prev_years))) if has_prev_period else None
+
+        # ЗА KPI КАРТИ И ТАБЛИЦИ: Вземаме само най-новата избрана година
+        latest_year = max(selected_years)
+        prev_year = latest_year - 1
+
+        # Месеците на най-новата година (напр. Януари - Юли)
+        latest_months = df_full[df_full["Година"] == latest_year]["Месец"].unique()
+
+        # Данни за KPI на текущата най-нова година
+        df_kpi_curr = df_full[df_full["Година"] == latest_year].copy()
+
+        # Данни за KPI на предходната година (съпоставими месеци YTD)
+        if prev_year in available_years:
+            df_prev = df_full[(df_full["Година"] == prev_year) & (df_full["Месец"].isin(latest_months))].copy()
+            has_prev_period = True
+            prev_period_label = f"{prev_year} (същите месеци)"
+        else:
+            df_prev = pd.DataFrame(columns=list(df_full.columns))
+            has_prev_period = False
+            prev_period_label = None
+
+        period_label_full = f"{latest_year} (YTD)" if len(latest_months) < 12 else f"{latest_year}"
 
     else:
         if len(p_opts) > 1:
@@ -612,6 +617,7 @@ with col_time:
             start_idx, end_idx = (p_opts[0], p_opts[0])
 
         df_working = df_full[(df_full["Sort_Index"] >= start_idx) & (df_full["Sort_Index"] <= end_idx)].copy()
+        df_kpi_curr = df_working.copy()
 
         selected_sort_indices = sorted(df_working["Sort_Index"].unique().tolist())
         prev_sort_indices = sorted([s - 100 for s in selected_sort_indices if (s - 100) in period_lookup])
@@ -631,18 +637,14 @@ with col_time:
 
 st.markdown("---")
 
-df_working["Нови"] = df_working["Нови_Месец"]
-df_working["Употребявани"] = df_working["Употр_Месец"]
-df_working["Пререгистрации"] = df_working["Други_Месец"]
-df_working["Вторичен Пазар"] = df_working["Употребявани"] + df_working["Пререгистрации"]
-df_working["Всички"] = df_working["Нови"] + df_working["Вторичен Пазар"]
-
-if not df_prev.empty:
-    df_prev["Нови"] = df_prev["Нови_Месец"]
-    df_prev["Употребявани"] = df_prev["Употр_Месец"]
-    df_prev["Пререгистрации"] = df_prev["Други_Месец"]
-    df_prev["Вторичен Пазар"] = df_prev["Употребявани"] + df_prev["Пререгистрации"]
-    df_prev["Всички"] = df_prev["Нови"] + df_prev["Вторичен Пазар"]
+# ПОДГОТОВКА НА КОЛОНИТЕ ЗА ВСИЧКИ СЕТОВЕ ДАННИ
+for df_target in [df_working, df_kpi_curr, df_prev]:
+    if not df_target.empty:
+        df_target["Нови"] = df_target["Нови_Месец"]
+        df_target["Употребявани"] = df_target["Употр_Месец"]
+        df_target["Пререгистрации"] = df_target["Други_Месец"]
+        df_target["Вторичен Пазар"] = df_target["Употребявани"] + df_target["Пререгистрации"]
+        df_target["Всички"] = df_target["Нови"] + df_target["Вторичен Пазар"]
 
 # ----------------------------------------------------------------------------------
 # 4. ТАБОВЕ ЗА АНАЛИЗ
@@ -651,12 +653,12 @@ tab_brand, tab_model, tab_new, tab_used = st.tabs(["МАРКИ", "МОДЕЛИ",
 
 with tab_brand:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_BRAND}">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
-    
-    brand_volumes = df_working.groupby("Brand")["Всички"].sum()
+
+    brand_volumes = df_kpi_curr.groupby("Brand")["Всички"].sum()
     top_brands = brand_volumes.nlargest(50).index.tolist()
     other_brands = sorted([b for b in brand_volumes.index if b not in top_brands])
     ordered_brands = top_brands + other_brands
-    
+
     def format_brand_option(brand):
         vol = brand_volumes.get(brand, 0)
         vol_str = f"{vol:,.0f}".replace(",", " ")
@@ -668,7 +670,7 @@ with tab_brand:
     default_b = "SKODA" if "SKODA" in ordered_brands else ordered_brands[0]
 
     col_b1, col_b2 = st.columns([1, 2])
-    
+
     selected_brand = col_b1.selectbox(
         "Избери марка за детайлен преглед:", 
         options=ordered_brands, 
@@ -678,14 +680,15 @@ with tab_brand:
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
 
     if selected_brand and metric_brand:
-        brand_data = df_working[df_working["Brand"] == selected_brand]
-        brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_working.columns)
+        brand_data_kpi = df_kpi_curr[df_kpi_curr["Brand"] == selected_brand]
+        brand_data_multi = df_working[df_working["Brand"] == selected_brand]
+        brand_data_prev = df_prev[df_prev["Brand"] == selected_brand] if has_prev_period else pd.DataFrame(columns=df_kpi_curr.columns)
 
-        total_market_metric = df_working[metric_brand].sum()
-        brand_total = brand_data[metric_brand].sum()
+        total_market_metric = df_kpi_curr[metric_brand].sum()
+        brand_total = brand_data_kpi[metric_brand].sum()
         brand_prev_total = brand_data_prev[metric_brand].sum() if has_prev_period else None
         brand_share = (brand_total / total_market_metric) * 100 if total_market_metric > 0 else 0
-        active_models_count = brand_data[brand_data[metric_brand] > 0]["Model"].nunique()
+        active_models_count = brand_data_kpi[brand_data_kpi[metric_brand] > 0]["Model"].nunique()
 
         accent_brand = TAB_ACCENT_BRAND
         kb1, kb2, kb3, kb4 = st.columns(4)
@@ -697,7 +700,7 @@ with tab_brand:
         st.markdown("<br>", unsafe_allow_html=True)
 
         render_multi_year_yoy_chart(
-            df_input=brand_data,
+            df_input=brand_data_multi,
             metric=metric_brand,
             title=f"Динамика на продажбите: {metric_brand} за {selected_brand}",
             key="yoy_brand_chart",
@@ -705,7 +708,7 @@ with tab_brand:
         )
 
         st.markdown(f"**Топ модели на {selected_brand} за периода ({period_label_full})**")
-        brand_models = brand_data.groupby("Model")[metric_brand].sum().reset_index()
+        brand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
         brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=False).head(20)
         brand_models["Model"] = brand_models["Model"].astype(str)
 
@@ -738,7 +741,7 @@ with tab_model:
         return f"{b} ({vol_str})"
 
     col_f1, col_f2 = st.columns([1, 2])
-    
+
     sel_brand = col_f1.selectbox(
         "1. Филтър по марка (опционално):", 
         options=ordered_filter_options,
@@ -768,7 +771,7 @@ with tab_model:
             model_df = m_data[m_data["Label"] == model]
             current_max = model_df[metric_tab1].max() if not model_df.empty else 0
             max_val = max(max_val, current_max)
-            
+
             fig.add_trace(go.Scatter(
                 x=model_df["Период"], y=model_df[metric_tab1], name=model, mode="lines+markers+text",
                 text=model_df[metric_tab1], textposition="top center", textfont=dict(size=14, color=colors[i % len(colors)]),
@@ -789,16 +792,17 @@ with tab_model:
         fig.update_xaxes(fixedrange=True)
         fig.update_yaxes(fixedrange=True, range=[0, y_max_range])
         fig.update_traces(cliponaxis=False)
-        
+
         st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
 
         st.markdown("<br><div class='section-title' style='--tab-accent:#64748b; font-size:0.95rem;'>СТРУКТУРА НА СЕЛЕКЦИЯТА ЗА ПЕРИОДА</div>", unsafe_allow_html=True)
-        
+
         pc1, pc2 = st.columns(2)
-        
-        pie_data_models = m_data.groupby("Label")[metric_tab1].sum().reset_index()
+
+        m_data_kpi = df_kpi_curr[df_kpi_curr["Label"].isin(sel_models)]
+        pie_data_models = m_data_kpi.groupby("Label")[metric_tab1].sum().reset_index()
         pie_data_models = pie_data_models[pie_data_models[metric_tab1] > 0]
-        
+
         fig_pie_1 = go.Figure(go.Pie(
             labels=pie_data_models["Label"], 
             values=pie_data_models[metric_tab1],
@@ -813,15 +817,15 @@ with tab_model:
             height=320
         )
         pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, width="stretch")
-        
-        total_new = m_data["Нови"].sum()
-        total_used = m_data["Употребявани"].sum()
-        total_rereg = m_data["Пререгистрации"].sum()
-        
+
+        total_new = m_data_kpi["Нови"].sum()
+        total_used = m_data_kpi["Употребявани"].sum()
+        total_rereg = m_data_kpi["Пререгистрации"].sum()
+
         status_labels = ["Нови", "Употребявани", "Пререгистрации"]
         status_values = [total_new, total_used, total_rereg]
         status_colors = ["#F59E0B", "#3B82F6", "#8B5CF6"]
-        
+
         fig_pie_2 = go.Figure(go.Pie(
             labels=status_labels, 
             values=status_values,
@@ -840,7 +844,7 @@ with tab_model:
 with tab_new:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_NEW}">Пазарен дял и лидери (НОВИ МПС) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
 
-    df_new_agg = df_working.groupby(["Brand", "Model"])["Нови"].sum().reset_index()
+    df_new_agg = df_kpi_curr.groupby(["Brand", "Model"])["Нови"].sum().reset_index()
     total_new_market = df_new_agg["Нови"].sum()
 
     accent_new = TAB_ACCENT_NEW
@@ -888,7 +892,7 @@ with tab_new:
 with tab_used:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_USED}">Вторичен пазар (Употребявани + Пререгистрации) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
 
-    df_used_agg = df_working.groupby(["Brand", "Model"])[["Употребявани", "Пререгистрации", "Вторичен Пазар"]].sum().reset_index()
+    df_used_agg = df_kpi_curr.groupby(["Brand", "Model"])[["Употребявани", "Пререгистрации", "Вторичен Пазар"]].sum().reset_index()
     total_used_market = df_used_agg["Вторичен Пазар"].sum()
 
     accent_used = TAB_ACCENT_USED
