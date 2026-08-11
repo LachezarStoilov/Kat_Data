@@ -215,7 +215,7 @@ st.markdown(f"""
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value"><span class="status-dot"></span>База данни: 03.2022 - 2026</div>
+<div class="meta-value"><span class="status-dot"></span>База данни: 2023 - 2026</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
