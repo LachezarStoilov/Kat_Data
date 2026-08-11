@@ -29,18 +29,30 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 :root {
-    --ink: #14181f;
-    --panel: #2e4557;
+    --ink: #10141c;
+    --panel: #101a23;
+    --panel-2: #16232e;
     --slate: #64748b;
-    --border: #e2e8f0;
+    --border: #e7eaf0;
     --surface: #ffffff;
-    --app-bg: #f4f5f7;
+    --app-bg: #f5f6f8;
     --brand: #0f5257;
+    --brand-glow: #14b8a6;
     --amber: #b45309;
     --steel: #2563a6;
     --success: #059669;
     --danger: #b91c1c;
     --muted: #94a3b8;
+
+    /* нова скала за радиуси и сенки - използвана в цялото приложение */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+
+    --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
+    --shadow-md: 0 8px 20px -6px rgba(16,24,40,0.12), 0 2px 6px -2px rgba(16,24,40,0.06);
+    --shadow-lg: 0 20px 40px -12px rgba(16,24,40,0.22);
 }
 
 html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-color: var(--app-bg); color: var(--ink); }
@@ -50,9 +62,11 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 
 /* ================== HERO / DASHBOARD PANEL ================== */
 .hero-container {
-    background: var(--panel);
-    border-radius: 14px;
-    padding: 1.75rem 2.25rem;
+    background:
+        radial-gradient(120% 160% at 100% 0%, rgba(20,184,166,0.22) 0%, rgba(16,26,35,0) 55%),
+        linear-gradient(135deg, #101a23 0%, #16232e 60%, #16232e 100%);
+    border-radius: var(--radius-xl);
+    padding: 1.85rem 2.4rem;
     margin-bottom: 1.5rem;
     display: flex;
     align-items: center;
@@ -60,11 +74,12 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
     gap: 20px;
     position: relative;
     overflow: hidden;
+    box-shadow: var(--shadow-lg);
 }
 .hero-container::after {
     content: "";
     position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
-    background: linear-gradient(90deg, var(--amber), var(--brand));
+    background: linear-gradient(90deg, var(--amber), var(--brand-glow));
 }
 .hero-left { display: flex; align-items: center; gap: 20px; }
 .hero-logo-box {
@@ -94,34 +109,45 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
     background: #22c55e; margin-right: 7px; box-shadow: 0 0 6px rgba(34,197,94,.8);
 }
 
-/* ================== KPI READOUT CARDS ================== */
+/* ================== KPI CARDS ================== */
 .kpi-card {
     position: relative; overflow: hidden;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1.1rem 1.2rem 1rem;
-    box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    border-radius: var(--radius-lg);
+    padding: 1.15rem 1.3rem 1.05rem 1.4rem;
+    box-shadow: var(--shadow-sm);
     height: 100%; min-height: 128px;
     display: flex; flex-direction: column; justify-content: center;
+    transition: box-shadow .18s ease, transform .18s ease;
 }
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .kpi-card::before {
-    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    content: ""; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
     background: var(--tab-accent, var(--brand));
 }
 .kpi-label { font-size: 0.72rem; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
-.kpi-readout { margin-top: 0.5rem; display: inline-block; background: var(--panel); border-radius: 6px; padding: 0.32rem 0.65rem; }
-.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; color: #f5c992; letter-spacing: 0.01em; }
-.kpi-sub { font-size: 0.8rem; font-weight: 600; margin-top: 6px; min-height: 1.2em; }
+.kpi-value-wrap { margin-top: 0.45rem; }
+.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 1.65rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.kpi-sub { font-size: 0.8rem; font-weight: 600; margin-top: 8px; min-height: 1.2em; }
+
+/* ================== CHART CARD WRAPPER ================== */
+[data-testid="stPlotlyChart"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 0.6rem 0.6rem 0.1rem;
+    box-shadow: var(--shadow-sm);
+}
 
 /* ================== SECTION TITLES ================== */
 .section-title {
-    font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.03em;
-    font-size: 1.05rem; font-weight: 600; color: var(--ink);
+    font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.02em;
+    font-size: 1rem; font-weight: 600; color: var(--ink);
     margin: 1.5rem 0 1rem 0; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 0.55rem;
 }
-.section-title::before { content: ""; width: 4px; height: 16px; border-radius: 2px; background: var(--tab-accent, var(--brand)); flex-shrink: 0; }
+.section-title::before { content: ""; width: 4px; height: 16px; border-radius: 3px; background: var(--tab-accent, var(--brand)); flex-shrink: 0; }
 
 /* ================== TABS ================== */
 div[data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border); }
@@ -130,10 +156,11 @@ button[role="tab"] {
     font-weight: 600; font-size: 0.85rem; color: var(--slate) !important;
     background: transparent !important; border: none !important;
     border-bottom: 2px solid transparent !important;
-    padding: 10px 6px !important; margin-right: 22px !important; border-radius: 0 !important;
+    padding: 10px 8px !important; margin-right: 22px !important; border-radius: 6px 6px 0 0 !important;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
 }
 button[role="tab"][aria-selected="true"] { color: var(--ink) !important; border-bottom: 2px solid var(--amber) !important; }
-button[role="tab"]:hover { color: var(--ink) !important; }
+button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,87,0.06) !important; }
 
 /* ================== PILLS ================== */
 [data-testid="stPills"] button[aria-pressed="true"] { background: var(--brand) !important; color: #fff !important; border-color: var(--brand) !important; }
@@ -228,10 +255,14 @@ st.markdown(f"""
 PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False}
 
 def apply_plotly_mobile_lock(fig):
-    fig.update_layout(dragmode=False, font=CHART_FONT)
+    fig.update_layout(
+        dragmode=False, font=CHART_FONT,
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c"))
+    )
     fig.update_xaxes(fixedrange=True)
     fig.update_yaxes(fixedrange=True, type='category')
-    fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False)
+    fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False, marker=dict(line=dict(width=0), cornerradius=6))
     return fig
 
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257"):
@@ -239,10 +270,16 @@ def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257")
     col.markdown(
         f'<div class="kpi-card" style="--tab-accent:{accent};">'
         f'<div class="kpi-label">{label}</div>'
-        f'<div class="kpi-readout"><span class="kpi-value">{value}</span></div>'
+        f'<div class="kpi-value-wrap"><span class="kpi-value">{value}</span></div>'
         f'{sub_html}</div>',
         unsafe_allow_html=True
     )
+
+def hex_to_rgba(hex_color, alpha=0.14):
+    """Помощна функция: превръща '#0f5257' в 'rgba(15,82,87,0.14)' за градиентни заливки в Plotly."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+    return f"rgba({r},{g},{b},{alpha})"
 
 def fmt_num(x): return f"{x:,.0f}".replace(",", " ")
 
@@ -303,7 +340,10 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
             textposition="top center",
             textfont=dict(size=13, color=line_color),
             line=dict(color=line_color, width=line_width, dash=line_dash, shape="spline"),
-            marker=dict(size=7 if is_latest else 5)
+            marker=dict(size=7 if is_latest else 5),
+            fill="tozeroy" if is_latest else None,
+            fillcolor=hex_to_rgba(line_color, 0.12) if is_latest else None,
+            hovertemplate="%{y:,.0f} бр.<extra>%{fullData.name}</extra>"
         ))
 
     fig.update_layout(
@@ -313,6 +353,9 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
         dragmode=False,
         font=CHART_FONT,
         hovermode="x unified",
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
         legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
         margin=dict(t=65, l=10, r=10, b=30)
     )
@@ -785,6 +828,9 @@ with tab_model:
             height=400, 
             font=CHART_FONT, 
             hovermode="x unified", 
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), 
             margin=dict(t=50, l=10, r=10, b=30),
             dragmode=False
@@ -814,6 +860,7 @@ with tab_model:
             margin=dict(t=40, b=10, l=10, r=10),
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
             font=CHART_FONT,
+            paper_bgcolor='rgba(0,0,0,0)',
             height=320
         )
         pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, width="stretch")
@@ -837,6 +884,7 @@ with tab_model:
             margin=dict(t=40, b=10, l=10, r=10),
             legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
             font=CHART_FONT,
+            paper_bgcolor='rgba(0,0,0,0)',
             height=320
         )
         pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, width="stretch")
