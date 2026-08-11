@@ -219,7 +219,7 @@ st.markdown(f"""
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value"><span class="status-dot"></span>Данни от 01.01.2025 до 31.07.2026</div>
+<div class="meta-value"><span class="status-dot"></span>Данни от 01.01.2023 до 31.07.2026</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
