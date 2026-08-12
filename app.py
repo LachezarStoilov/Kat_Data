@@ -513,14 +513,34 @@ with tab_brand:
         render_multi_year_yoy_chart(df_input=brand_data_multi, metric=metric_brand, title=f"Динамика на продажбите: {metric_brand} за {selected_brand}", key="yoy_brand_chart", primary_color=accent_brand)
 
         st.markdown(f"**Топ модели на {selected_brand} за периода ({period_label_full})**")
-        brand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
-        brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=False).head(20)
-        brand_models["Model"] = brand_models["Model"].astype(str)
+        rand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
+brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=True).tail(20)
+brand_models["Model"] = brand_models["Model"].astype(str)
 
-        fig_b_models = px.bar(brand_models.sort_values(metric_brand), x=metric_brand, y="Model", orientation="h", text=metric_brand, color=metric_brand, color_continuous_scale=["#bcdfe0", "#3f9ea6", "#0f5257"])
-        fig_b_models.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
-        fig_b_models = apply_plotly_mobile_lock(fig_b_models)
-        st.plotly_chart(fig_b_models, config=PLOTLY_CONFIG, width="stretch")
+n_models = len(brand_models)
+rank_desc = list(range(n_models, 0, -1))
+bar_colors = ["#14b8a6" if r == 1 else "#0f5257" if r <= 3 else "#bcdfe0" for r in rank_desc]
+
+fig_b_models = go.Figure(go.Bar(
+    x=brand_models[metric_brand],
+    y=brand_models["Model"],
+    orientation="h",
+    text=[fmt_num(v) for v in brand_models[metric_brand]],
+    textposition="outside",
+    marker=dict(color=bar_colors),
+    hovertemplate="<b>%{y}</b><br>%{x:,.0f} бр.<extra></extra>".replace(",", " ")
+))
+fig_b_models.update_layout(
+    title=dict(text=f"ТОП {n_models} МОДЕЛА ({metric_brand.upper()})", font=TITLE_FONT),
+    height=max(420, n_models * 27),
+    margin=dict(t=55, l=10, r=30, b=10),
+    showlegend=False
+)
+fig_b_models = apply_plotly_mobile_lock(fig_b_models)
+fig_b_models.update_traces(textfont=dict(size=13, family="JetBrains Mono, monospace", color="#14181f"))
+fig_b_models.update_xaxes(showgrid=True, gridcolor="#eef1f5", zeroline=False)
+
+st.plotly_chart(fig_b_models, config=PLOTLY_CONFIG, width="stretch")
 
 with tab_model:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_MODEL}">Сравнителен анализ на конкретни модели</div>', unsafe_allow_html=True)
