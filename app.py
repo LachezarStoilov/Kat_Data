@@ -2,13 +2,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import re
 import os
-import glob
-import unicodedata
 
 # ====================================================================================
-# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V10 - Multi-Year BI Upgrade)
+# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V10 - Parquet Fast Loading)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wide")
@@ -44,7 +41,6 @@ st.markdown("""
     --danger: #b91c1c;
     --muted: #94a3b8;
 
-    /* нова скала за радиуси и сенки - използвана в цялото приложение */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
@@ -60,7 +56,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 *:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
-/* ================== HERO / DASHBOARD PANEL ================== */
+/* HERO / DASHBOARD PANEL */
 .hero-container {
     background:
         radial-gradient(120% 160% at 100% 0%, rgba(20,184,166,0.22) 0%, rgba(16,26,35,0) 55%),
@@ -109,7 +105,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
     background: #22c55e; margin-right: 7px; box-shadow: 0 0 6px rgba(34,197,94,.8);
 }
 
-/* ================== KPI CARDS ================== */
+/* KPI CARDS */
 .kpi-card {
     position: relative; overflow: hidden;
     background: var(--surface);
@@ -131,7 +127,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 .kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 1.65rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
 .kpi-sub { font-size: 0.8rem; font-weight: 600; margin-top: 8px; min-height: 1.2em; }
 
-/* ================== CHART CARD WRAPPER ================== */
+/* CHART CARD WRAPPER */
 [data-testid="stPlotlyChart"] {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -140,7 +136,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
     box-shadow: var(--shadow-sm);
 }
 
-/* ================== SECTION TITLES ================== */
+/* SECTION TITLES */
 .section-title {
     font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.02em;
     font-size: 1rem; font-weight: 600; color: var(--ink);
@@ -149,7 +145,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 }
 .section-title::before { content: ""; width: 4px; height: 16px; border-radius: 3px; background: var(--tab-accent, var(--brand)); flex-shrink: 0; }
 
-/* ================== TABS ================== */
+/* TABS */
 div[data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--border); }
 button[role="tab"] {
     font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.04em;
@@ -162,13 +158,13 @@ button[role="tab"] {
 button[role="tab"][aria-selected="true"] { color: var(--ink) !important; border-bottom: 2px solid var(--amber) !important; }
 button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,87,0.06) !important; }
 
-/* ================== PILLS ================== */
+/* PILLS */
 [data-testid="stPills"] button[aria-pressed="true"] { background: var(--brand) !important; color: #fff !important; border-color: var(--brand) !important; }
 
-/* ================== DATA TABLES ================== */
+/* DATA TABLES */
 [data-testid="stDataFrame"] { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 
-/* ================== MOBILE / RESPONSIVE FIX ================== */
+/* MOBILE / RESPONSIVE FIX */
 @media (max-width: 768px) {
     [data-testid="stAppViewContainer"] { overflow-x: hidden !important; }
     [data-testid="stMainBlockContainer"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; max-width: 100% !important; }
@@ -239,7 +235,7 @@ st.markdown(f"""
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value"><span class="status-dot"></span>Данни: 01.2022 до 07.2026</div>
+<div class="meta-value"><span class="status-dot"></span>Данни: 2022 до 2026</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -276,7 +272,6 @@ def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257")
     )
 
 def hex_to_rgba(hex_color, alpha=0.14):
-    """Помощна функция: превръща '#0f5257' в 'rgba(15,82,87,0.14)' за градиентни заливки в Plotly."""
     hex_color = hex_color.lstrip("#")
     r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
@@ -297,9 +292,6 @@ def render_kpi_growth(col, label, current_total, prev_total, accent, prev_label=
     else:
         kpi_card(col, label, f"{growth_pct:.1f}%", sub=f"▼ {sub_text}", sub_color="#b91c1c", accent=accent)
 
-# ----------------------------------------------------------------------------------
-# МУЛТИ-ГОДИШНА ГРАФИКА ЗА СЕЗОННОСТ И ТРЕНД
-# ----------------------------------------------------------------------------------
 def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f5257"):
     if df_input.empty:
         st.info("Няма налични данни за избрания филтър.")
@@ -312,13 +304,7 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
     fig = go.Figure()
     years = sorted(agg_df["Година"].unique())
     
-    color_map = {
-        2026: primary_color,
-        2025: "#2563a6",
-        2024: "#b45309",
-        2023: "#64748b",
-        2022: "#94a3b8"
-    }
+    color_map = {2026: primary_color, 2025: "#2563a6", 2024: "#b45309", 2023: "#64748b", 2022: "#94a3b8"}
     past_colors = ["#94a3b8", "#64748b", "#475569", "#2563a6", "#3b82f6", "#b45309"]
 
     max_val = agg_df[metric].max() if not agg_df.empty else 10
@@ -332,13 +318,10 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
         line_dash = "solid" if is_latest else "dot"
         
         fig.add_trace(go.Scatter(
-            x=yr_data["Месец_Име"],
-            y=yr_data[metric],
-            name=str(yr),
+            x=yr_data["Месец_Име"], y=yr_data[metric], name=str(yr),
             mode="lines+markers+text" if is_latest else "lines+markers",
             text=yr_data[metric] if is_latest else None,
-            textposition="top center",
-            textfont=dict(size=13, color=line_color),
+            textposition="top center", textfont=dict(size=13, color=line_color),
             line=dict(color=line_color, width=line_width, dash=line_dash, shape="spline"),
             marker=dict(size=7 if is_latest else 5),
             fill="tozeroy" if is_latest else None,
@@ -348,16 +331,10 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
 
     fig.update_layout(
         title=dict(text=title.upper(), font=TITLE_FONT),
-        template="plotly_white",
-        height=380,
-        dragmode=False,
-        font=CHART_FONT,
-        hovermode="x unified",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
+        template="plotly_white", height=380, dragmode=False, font=CHART_FONT,
+        hovermode="x unified", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
-        legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-        margin=dict(t=65, l=10, r=10, b=30)
+        legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), margin=dict(t=65, l=10, r=10, b=30)
     )
 
     fig.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names.values()))
@@ -367,40 +344,33 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key, width="stretch")
 
 # ----------------------------------------------------------------------------------
-# 1. ГЛАВНО МЕНЮ
-# ----------------------------------------------------------------------------------
-VEHICLE_CATEGORIES = {
-    "Леки автомобили (M1)": ["M1"],
-    "Лекотоварни (N1)": ["N1"],
-    "Товарни (N2, N3)": ["N2", "N3"],
-    "Мотори и АТВ (L)": ["L1", "L2", "L3", "L4", "L5", "L6", "L7"],
-    "Други": ["M2", "M3", "O1", "O2", "O3", "O4", "T", "OT"]
-}
-
-col_cat, col_time = st.columns([1, 1])
-with col_cat:
-    st.markdown("##### Изберете категория")
-    selected_cat = st.pills("Категория", options=list(VEHICLE_CATEGORIES.keys()), default="Леки автомобили (M1)", label_visibility="collapsed")
-if not selected_cat: st.stop()
-
-# ----------------------------------------------------------------------------------
-# 2. ОБРАБОТКА НА ДАННИ
+# ЗАРЕЖДАНЕ НА PARQUET БАЗАТА ДАННИ
 # ----------------------------------------------------------------------------------
 @st.cache_data
 def load_data():
     parquet_file = os.path.join("data", "kat_data_clean.parquet")
     if not os.path.exists(parquet_file):
-        st.error("Файлът 'data/kat_data_clean.parquet' липсва! Изпълнете 'python db.py' локално.")
+        st.error("Файлът 'data/kat_data_clean.parquet' липсва! Моля, качете го в GitHub.")
         st.stop()
     return pd.read_parquet(parquet_file)
 
 df_all_categories = load_data()
 VEHICLE_CATEGORIES_KEYS = list(df_all_categories["Категория_Име"].unique())
 
+# ----------------------------------------------------------------------------------
+# ГЛАВНИ ФИЛТРИ (1 РЕД: КАТЕГОРИЯ ВЛЯВО, ВРЕМЕВИ ПРОЗОРЕЦ ВДЯСНО)
+# ----------------------------------------------------------------------------------
 col_cat, col_time = st.columns([1, 1])
+
 with col_cat:
     st.markdown("##### Изберете категория")
-    selected_cat = st.pills("Категория", options=VEHICLE_CATEGORIES_KEYS, default=VEHICLE_CATEGORIES_KEYS[0], label_visibility="collapsed")
+    selected_cat = st.pills(
+        "Категория", 
+        options=VEHICLE_CATEGORIES_KEYS, 
+        default=VEHICLE_CATEGORIES_KEYS[0], 
+        label_visibility="collapsed",
+        key="pill_category_main"
+    )
 
 if not selected_cat: 
     st.stop()
@@ -408,9 +378,6 @@ if not selected_cat:
 # Вземаме данните за избраната категория
 df_full = df_all_categories[df_all_categories["Категория_Име"] == selected_cat].copy()
 
-# ----------------------------------------------------------------------------------
-# ВРЕМЕВИ ПРОЗОРЕЦ И РЕЖИМ НА АНАЛИЗ (КОРИГИРАНА LOGIKA ЗА KPI & YOY)
-# ----------------------------------------------------------------------------------
 available_years = sorted(df_full["Година"].unique().tolist(), reverse=True)
 unique_periods = df_full[["Sort_Index", "Период"]].drop_duplicates().sort_values("Sort_Index")
 p_opts = unique_periods["Sort_Index"].tolist()
@@ -428,32 +395,21 @@ with col_time:
 
     if analysis_mode == "Година спрямо Година (YoY)":
         default_yrs = [y for y in [2026, 2025] if y in available_years]
-        if not default_yrs and available_years:
-            default_yrs = [available_years[0]]
+        if not default_yrs and available_years: default_yrs = [available_years[0]]
 
-        selected_years = st.multiselect(
-            "Избери години за сравнение:",
-            options=available_years,
-            default=default_yrs
-        )
+        selected_years = st.multiselect("Избери години за сравнение:", options=available_years, default=default_yrs)
         if not selected_years:
             st.warning("Моля, изберете поне една година.")
             st.stop()
 
-        # df_working за мулти-годишната тренд графика
         df_working = df_full[df_full["Година"].isin(selected_years)].copy()
 
-        # ЗА KPI КАРТИ И ТАБЛИЦИ: Вземаме само най-новата избрана година
         latest_year = max(selected_years)
         prev_year = latest_year - 1
-
-        # Месеците на най-новата година (напр. Януари - Юли)
         latest_months = df_full[df_full["Година"] == latest_year]["Месец"].unique()
 
-        # Данни за KPI на текущата най-нова година
         df_kpi_curr = df_full[df_full["Година"] == latest_year].copy()
 
-        # Данни за KPI на предходната година (съпоставими месеци YTD)
         if prev_year in available_years:
             df_prev = df_full[(df_full["Година"] == prev_year) & (df_full["Месец"].isin(latest_months))].copy()
             has_prev_period = True
@@ -509,7 +465,7 @@ for df_target in [df_working, df_kpi_curr, df_prev]:
         df_target["Всички"] = df_target["Нови"] + df_target["Вторичен Пазар"]
 
 # ----------------------------------------------------------------------------------
-# 4. ТАБОВЕ ЗА АНАЛИЗ
+# ТАБОВЕ ЗА АНАЛИЗ
 # ----------------------------------------------------------------------------------
 tab_brand, tab_model, tab_new, tab_used = st.tabs(["МАРКИ", "МОДЕЛИ", "НОВИ", "ВТОРИЧЕН"])
 
@@ -524,21 +480,14 @@ with tab_brand:
     def format_brand_option(brand):
         vol = brand_volumes.get(brand, 0)
         vol_str = f"{vol:,.0f}".replace(",", " ")
-        if brand in top_brands:
-            return f" {brand} ({vol_str})"
-        else:
-            return f"{brand} ({vol_str})"
+        if brand in top_brands: return f" {brand} ({vol_str})"
+        return f"{brand} ({vol_str})"
 
-    default_b = "SKODA" if "SKODA" in ordered_brands else ordered_brands[0]
+    default_b = "SKODA" if "SKODA" in ordered_brands else (ordered_brands[0] if ordered_brands else "")
 
     col_b1, col_b2 = st.columns([1, 2])
 
-    selected_brand = col_b1.selectbox(
-        "Избери марка за детайлен преглед:", 
-        options=ordered_brands, 
-        index=ordered_brands.index(default_b),
-        format_func=format_brand_option
-    )
+    selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=ordered_brands, index=ordered_brands.index(default_b) if default_b in ordered_brands else 0, format_func=format_brand_option)
     metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
 
     if selected_brand and metric_brand:
@@ -561,24 +510,14 @@ with tab_brand:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        render_multi_year_yoy_chart(
-            df_input=brand_data_multi,
-            metric=metric_brand,
-            title=f"Динамика на продажбите: {metric_brand} за {selected_brand}",
-            key="yoy_brand_chart",
-            primary_color=accent_brand
-        )
+        render_multi_year_yoy_chart(df_input=brand_data_multi, metric=metric_brand, title=f"Динамика на продажбите: {metric_brand} за {selected_brand}", key="yoy_brand_chart", primary_color=accent_brand)
 
         st.markdown(f"**Топ модели на {selected_brand} за периода ({period_label_full})**")
         brand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
         brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=False).head(20)
         brand_models["Model"] = brand_models["Model"].astype(str)
 
-        fig_b_models = px.bar(
-            brand_models.sort_values(metric_brand),
-            x=metric_brand, y="Model", orientation="h", text=metric_brand,
-            color=metric_brand, color_continuous_scale=["#bcdfe0", "#3f9ea6", "#0f5257"]
-        )
+        fig_b_models = px.bar(brand_models.sort_values(metric_brand), x=metric_brand, y="Model", orientation="h", text=metric_brand, color=metric_brand, color_continuous_scale=["#bcdfe0", "#3f9ea6", "#0f5257"])
         fig_b_models.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False)
         fig_b_models = apply_plotly_mobile_lock(fig_b_models)
         st.plotly_chart(fig_b_models, config=PLOTLY_CONFIG, width="stretch")
@@ -594,21 +533,15 @@ with tab_model:
     ordered_filter_options = ["Всички марки"] + top_filter_brands + other_filter_brands
 
     def format_filter_brand(b):
-        if b == "Всички марки":
-            return "🌐 Всички марки"
+        if b == "Всички марки": return "🌐 Всички марки"
         vol = available_brands_vols.get(b, 0)
         vol_str = f"{vol:,.0f}".replace(",", " ")
-        if b in top_filter_brands:
-            return f" {b} ({vol_str})"
+        if b in top_filter_brands: return f" {b} ({vol_str})"
         return f"{b} ({vol_str})"
 
     col_f1, col_f2 = st.columns([1, 2])
 
-    sel_brand = col_f1.selectbox(
-        "1. Филтър по марка (опционално):", 
-        options=ordered_filter_options,
-        format_func=format_filter_brand
-    )
+    sel_brand = col_f1.selectbox("1. Филтър по марка (опционално):", options=ordered_filter_options, format_func=format_filter_brand)
 
     if sel_brand == "Всички марки": available_labels = sorted(liquid_models["Label"].unique())
     else: available_labels = sorted(liquid_models[liquid_models["Brand"] == sel_brand]["Label"].unique())
@@ -628,7 +561,6 @@ with tab_model:
         colors = ["#3B82F6", "#F97316", "#10B981", "#EC4899", "#8B5CF6", "#06B6D4", "#F59E0B"]
 
         max_val = 0
-
         for i, model in enumerate(sel_models):
             model_df = m_data[m_data["Label"] == model]
             current_max = model_df[metric_tab1].max() if not model_df.empty else 0
@@ -643,16 +575,10 @@ with tab_model:
         y_max_range = max_val * 1.15 if max_val > 0 else 10
 
         fig.update_layout(
-            template="plotly_white", 
-            height=400, 
-            font=CHART_FONT, 
-            hovermode="x unified", 
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)',
+            template="plotly_white", height=400, font=CHART_FONT, hovermode="x unified",
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
-            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), 
-            margin=dict(t=50, l=10, r=10, b=30),
-            dragmode=False
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), margin=dict(t=50, l=10, r=10, b=30), dragmode=False
         )
         fig.update_xaxes(fixedrange=True)
         fig.update_yaxes(fixedrange=True, range=[0, y_max_range])
@@ -668,20 +594,8 @@ with tab_model:
         pie_data_models = m_data_kpi.groupby("Label")[metric_tab1].sum().reset_index()
         pie_data_models = pie_data_models[pie_data_models[metric_tab1] > 0]
 
-        fig_pie_1 = go.Figure(go.Pie(
-            labels=pie_data_models["Label"], 
-            values=pie_data_models[metric_tab1],
-            hole=0.45, 
-            marker=dict(colors=colors[:len(pie_data_models)])
-        ))
-        fig_pie_1.update_layout(
-            title=dict(text=f"Дял продажби ({metric_tab1})", font=TITLE_FONT, x=0.5),
-            margin=dict(t=40, b=10, l=10, r=10),
-            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-            font=CHART_FONT,
-            paper_bgcolor='rgba(0,0,0,0)',
-            height=320
-        )
+        fig_pie_1 = go.Figure(go.Pie(labels=pie_data_models["Label"], values=pie_data_models[metric_tab1], hole=0.45, marker=dict(colors=colors[:len(pie_data_models)])))
+        fig_pie_1.update_layout(title=dict(text=f"Дял продажби ({metric_tab1})", font=TITLE_FONT, x=0.5), margin=dict(t=40, b=10, l=10, r=10), legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=320)
         pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, width="stretch")
 
         total_new = m_data_kpi["Нови"].sum()
@@ -692,20 +606,8 @@ with tab_model:
         status_values = [total_new, total_used, total_rereg]
         status_colors = ["#F59E0B", "#3B82F6", "#8B5CF6"]
 
-        fig_pie_2 = go.Figure(go.Pie(
-            labels=status_labels, 
-            values=status_values,
-            hole=0.45,
-            marker=dict(colors=status_colors)
-        ))
-        fig_pie_2.update_layout(
-            title=dict(text="Общо за селекцията", font=TITLE_FONT, x=0.5),
-            margin=dict(t=40, b=10, l=10, r=10),
-            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-            font=CHART_FONT,
-            paper_bgcolor='rgba(0,0,0,0)',
-            height=320
-        )
+        fig_pie_2 = go.Figure(go.Pie(labels=status_labels, values=status_values, hole=0.45, marker=dict(colors=status_colors)))
+        fig_pie_2.update_layout(title=dict(text="Общо за селекцията", font=TITLE_FONT, x=0.5), margin=dict(t=40, b=10, l=10, r=10), legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=320)
         pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, width="stretch")
 
 with tab_new:
