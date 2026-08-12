@@ -160,6 +160,28 @@ button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,
 
 /* PILLS */
 [data-testid="stPills"] button[aria-pressed="true"] { background: var(--brand) !important; color: #fff !important; border-color: var(--brand) !important; }
+/* MULTISELECT ТАГОВЕ (Години / Модели) */
+[data-baseweb="tag"] {
+    background-color: rgba(15, 82, 87, 0.10) !important;
+    border: 1px solid rgba(15, 82, 87, 0.35) !important;
+    border-radius: 8px !important;
+    color: #0f5257 !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-weight: 600 !important;
+    padding: 1px 4px !important;
+}
+[data-baseweb="tag"] svg { fill: #0f5257 !important; }
+[data-baseweb="tag"]:hover { background-color: rgba(15, 82, 87, 0.18) !important; }
+
+/* Кутийка на select/multiselect */
+[data-baseweb="select"] > div {
+    border-radius: 10px !important;
+    border-color: var(--border) !important;
+}
+[data-baseweb="select"] > div:focus-within {
+    border-color: var(--brand) !important;
+    box-shadow: 0 0 0 1px rgba(15,82,87,0.25) !important;
+}
 
 /* DATA TABLES */
 [data-testid="stDataFrame"] { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
@@ -573,36 +595,73 @@ with tab_model:
     sel_models = col_f2.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    metric_tab1 = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_model")
+    metric_tab1 = st.pills("3. Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_model")
+
+    MODEL_COLORS = ["#0f5257", "#b45309", "#2563a6", "#7c3aed", "#be185d", "#0d9488", "#64748b"]
 
     if sel_models and metric_tab1:
         m_data = df_working[df_working["Label"].isin(sel_models)].sort_values("Sort_Index")
-        fig = go.Figure()
-        colors = ["#3B82F6", "#F97316", "#10B981", "#EC4899", "#8B5CF6", "#06B6D4", "#F59E0B"]
+        m_data_kpi = df_kpi_curr[df_kpi_curr["Label"].isin(sel_models)]
+        m_data_prev = df_prev[df_prev["Label"].isin(sel_models)] if has_prev_period else pd.DataFrame(columns=df_kpi_curr.columns)
 
+        selection_total = m_data_kpi[metric_tab1].sum()
+        selection_prev_total = m_data_prev[metric_tab1].sum() if has_prev_period else None
+        category_total = df_kpi_curr[metric_tab1].sum()
+        selection_share = (selection_total / category_total * 100) if category_total > 0 else 0
+
+        model_ranking = m_data_kpi.groupby("Label")[metric_tab1].sum().sort_values(ascending=False)
+        leader_model = model_ranking.index[0] if not model_ranking.empty else "—"
+        leader_units = model_ranking.iloc[0] if not model_ranking.empty else 0
+
+        accent_model = TAB_ACCENT_MODEL
+        km1, km2, km3, km4 = st.columns(4)
+        kpi_card(km1, "Общо в селекцията", fmt_num(selection_total), accent=accent_model)
+        render_kpi_growth(km2, "Ръст (YoY)", selection_total, selection_prev_total, accent=accent_model, prev_label=prev_period_label)
+        kpi_card(km3, "Дял от категорията", f"{selection_share:.1f}%", sub=f"от общо {fmt_num(category_total)}", accent=accent_model)
+        kpi_card(km4, "Лидер в селекцията", leader_model, sub=f"{fmt_num(leader_units)} бр.", accent=accent_model)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        fig = go.Figure()
         max_val = 0
+
         for i, model in enumerate(sel_models):
             model_df = m_data[m_data["Label"] == model]
-            current_max = model_df[metric_tab1].max() if not model_df.empty else 0
-            max_val = max(max_val, current_max)
+            if model_df.empty:
+                continue
+            color = MODEL_COLORS[i % len(MODEL_COLORS)]
+            max_val = max(max_val, model_df[metric_tab1].max())
 
             fig.add_trace(go.Scatter(
-                x=model_df["Период"], y=model_df[metric_tab1], name=model, mode="lines+markers+text",
-                text=model_df[metric_tab1], textposition="top center", textfont=dict(size=14, color=colors[i % len(colors)]),
-                line=dict(width=3, shape="spline", color=colors[i % len(colors)]), marker=dict(size=8)
+                x=model_df["Период"], y=model_df[metric_tab1], name=model, mode="lines+markers",
+                line=dict(width=2.75, shape="spline", color=color),
+                marker=dict(size=6, color=color),
+                hovertemplate="%{y:,.0f} бр.<extra>%{fullData.name}</extra>"
+            ))
+
+            last_row = model_df.iloc[-1]
+            short_name = model.split(" ", 1)[-1]
+            fig.add_trace(go.Scatter(
+                x=[last_row["Период"]], y=[last_row[metric_tab1]],
+                mode="markers+text",
+                text=[f"  {short_name}: {fmt_num(last_row[metric_tab1])}"],
+                textposition="middle right",
+                textfont=dict(size=12, color=color, family="JetBrains Mono, monospace"),
+                marker=dict(size=9, color=color, line=dict(width=2, color="#ffffff")),
+                showlegend=False, hoverinfo="skip"
             ))
 
         y_max_range = max_val * 1.15 if max_val > 0 else 10
 
         fig.update_layout(
-            template="plotly_white", height=400, font=CHART_FONT, hovermode="x unified",
+            template="plotly_white", height=420, font=CHART_FONT, hovermode="x unified",
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
-            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), margin=dict(t=50, l=10, r=10, b=30), dragmode=False
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            margin=dict(t=20, l=10, r=115, b=30), dragmode=False
         )
-        fig.update_xaxes(fixedrange=True)
-        fig.update_yaxes(fixedrange=True, range=[0, y_max_range])
-        fig.update_traces(cliponaxis=False)
+        fig.update_xaxes(fixedrange=True, showgrid=False)
+        fig.update_yaxes(fixedrange=True, range=[0, y_max_range], showgrid=True, gridcolor="#eef1f5", zeroline=False)
 
         st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
 
@@ -610,24 +669,45 @@ with tab_model:
 
         pc1, pc2 = st.columns(2)
 
-        m_data_kpi = df_kpi_curr[df_kpi_curr["Label"].isin(sel_models)]
         pie_data_models = m_data_kpi.groupby("Label")[metric_tab1].sum().reset_index()
-        pie_data_models = pie_data_models[pie_data_models[metric_tab1] > 0]
+        pie_data_models = pie_data_models[pie_data_models[metric_tab1] > 0].sort_values(metric_tab1, ascending=False)
+        pie_colors_1 = [MODEL_COLORS[sel_models.index(lbl) % len(MODEL_COLORS)] if lbl in sel_models else "#94a3b8" for lbl in pie_data_models["Label"]]
 
-        fig_pie_1 = go.Figure(go.Pie(labels=pie_data_models["Label"], values=pie_data_models[metric_tab1], hole=0.45, marker=dict(colors=colors[:len(pie_data_models)])))
-        fig_pie_1.update_layout(title=dict(text=f"Дял продажби ({metric_tab1})", font=TITLE_FONT, x=0.5), margin=dict(t=40, b=10, l=10, r=10), legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=320)
+        fig_pie_1 = go.Figure(go.Pie(
+            labels=pie_data_models["Label"], values=pie_data_models[metric_tab1], hole=0.62,
+            marker=dict(colors=pie_colors_1, line=dict(color="#ffffff", width=2)),
+            textinfo="percent", textfont=dict(size=12, family="Manrope, sans-serif")
+        ))
+        fig_pie_1.update_layout(
+            title=dict(text=f"Дял продажби ({metric_tab1})", font=TITLE_FONT, x=0.5),
+            margin=dict(t=40, b=10, l=10, r=10),
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=340,
+            annotations=[dict(text=f"<b>{fmt_num(selection_total)}</b><br><span style='font-size:11px;color:#64748b'>бр.</span>", x=0.5, y=0.5, showarrow=False, font=dict(size=18, family="JetBrains Mono, monospace", color="#14181f"))]
+        )
         pc1.plotly_chart(fig_pie_1, config=PLOTLY_CONFIG, width="stretch")
 
         total_new = m_data_kpi["Нови"].sum()
         total_used = m_data_kpi["Употребявани"].sum()
         total_rereg = m_data_kpi["Пререгистрации"].sum()
+        total_status = total_new + total_used + total_rereg
 
         status_labels = ["Нови", "Употребявани", "Пререгистрации"]
         status_values = [total_new, total_used, total_rereg]
-        status_colors = ["#F59E0B", "#3B82F6", "#8B5CF6"]
+        status_colors = [TAB_ACCENT_NEW, TAB_ACCENT_USED, "#94b8d4"]
 
-        fig_pie_2 = go.Figure(go.Pie(labels=status_labels, values=status_values, hole=0.45, marker=dict(colors=status_colors)))
-        fig_pie_2.update_layout(title=dict(text="Общо за селекцията", font=TITLE_FONT, x=0.5), margin=dict(t=40, b=10, l=10, r=10), legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"), font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=320)
+        fig_pie_2 = go.Figure(go.Pie(
+            labels=status_labels, values=status_values, hole=0.62,
+            marker=dict(colors=status_colors, line=dict(color="#ffffff", width=2)),
+            textinfo="percent", textfont=dict(size=12, family="Manrope, sans-serif")
+        ))
+        fig_pie_2.update_layout(
+            title=dict(text="Общо за селекцията", font=TITLE_FONT, x=0.5),
+            margin=dict(t=40, b=10, l=10, r=10),
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
+            font=CHART_FONT, paper_bgcolor='rgba(0,0,0,0)', height=340,
+            annotations=[dict(text=f"<b>{fmt_num(total_status)}</b><br><span style='font-size:11px;color:#64748b'>бр.</span>", x=0.5, y=0.5, showarrow=False, font=dict(size=18, family="JetBrains Mono, monospace", color="#14181f"))]
+        )
         pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, width="stretch")
 
 with tab_new:
