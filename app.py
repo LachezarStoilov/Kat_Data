@@ -513,7 +513,7 @@ with tab_brand:
         render_multi_year_yoy_chart(df_input=brand_data_multi, metric=metric_brand, title=f"Динамика на продажбите: {metric_brand} за {selected_brand}", key="yoy_brand_chart", primary_color=accent_brand)
 
         st.markdown(f"**Топ модели на {selected_brand} за периода ({period_label_full})**")
-        rand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
+         brand_models = brand_data_kpi.groupby("Model")[metric_brand].sum().reset_index()
 brand_models = brand_models[brand_models[metric_brand] > 0].sort_values(metric_brand, ascending=True).tail(20)
 brand_models["Model"] = brand_models["Model"].astype(str)
 
