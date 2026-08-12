@@ -26,6 +26,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 :root {
+    color-scheme: light;
     --ink: #10141c;
     --panel: #101a23;
     --panel-2: #16232e;
@@ -158,10 +159,17 @@ button[role="tab"] {
 button[role="tab"][aria-selected="true"] { color: var(--ink) !important; border-bottom: 2px solid var(--amber) !important; }
 button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,87,0.06) !important; }
 
-/* PILLS */
-[data-testid="stPills"] button[aria-pressed="true"] { background: var(--brand) !important; color: #fff !important; border-color: var(--brand) !important; }
+/* PILLS - fallback ако темата не покрие всичко */
+[data-testid="stPills"] button[aria-pressed="true"],
+[data-testid="stPills"] button[aria-checked="true"] {
+    background: var(--brand) !important;
+    color: #fff !important;
+    border-color: var(--brand) !important;
+}
+
 /* MULTISELECT ТАГОВЕ (Години / Модели) */
 [data-baseweb="tag"] {
+
     background-color: rgba(15, 82, 87, 0.10) !important;
     border: 1px solid rgba(15, 82, 87, 0.35) !important;
     border-radius: 8px !important;
