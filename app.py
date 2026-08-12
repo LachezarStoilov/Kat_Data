@@ -386,208 +386,27 @@ if not selected_cat: st.stop()
 # ----------------------------------------------------------------------------------
 # 2. ОБРАБОТКА НА ДАННИ
 # ----------------------------------------------------------------------------------
-SUMMARY_ROW_PATTERN = r"ОБЩ|ВСИЧК|TOTAL|SUM"
+@st.cache_data
+def load_data():
+    parquet_file = os.path.join("data", "kat_data_clean.parquet")
+    if not os.path.exists(parquet_file):
+        st.error("Файлът 'data/kat_data_clean.parquet' липсва! Изпълнете 'python db.py' локално.")
+        st.stop()
+    return pd.read_parquet(parquet_file)
 
-@st.cache_data(show_spinner=False)
-def load_and_process(file_bytes_list, file_names, category_name):
-    parsed_files = []
-    prefixes = VEHICLE_CATEGORIES[category_name]
-    
-    for content, name in zip(file_bytes_list, file_names):
-        match = re.search(r'(\d{1,2})[_.-](\d{4})', name)
-        if not match: continue
-        month, year = int(match.group(1)), int(match.group(2))
-        try:
-            try: df = pd.read_csv(pd.io.common.BytesIO(content), encoding="utf-8")
-            except: df = pd.read_csv(pd.io.common.BytesIO(content), encoding="cp1251")
-            
-            df.columns = [c.strip() for c in df.columns]
-            brand_col = [c for c in df.columns if "МАРКА" in c.upper()][0]
-            model_col = [c for c in df.columns if "МОДЕЛ" in c.upper()][0]
-            
-            n_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'нови' in c.lower() and 'общо' not in c.lower()]
-            u_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'употр' in c.lower() and 'общо' not in c.lower()]
-            o_cols = [c for c in df.columns if any(c.startswith(p) for p in prefixes) and 'други' in c.lower() and 'общо' not in c.lower()]
-            
-            cols_to_keep = [brand_col, model_col] + n_cols + u_cols + o_cols
-            df = df[cols_to_keep].copy()
-            
-            parsed_files.append({
-                "year": year, "month": month, 
-                "period_str": f"{month:02d}.{year}", "sort_index": year * 100 + month, 
-                "df": df, "n_cols": n_cols, "u_cols": u_cols, "o_cols": o_cols,
-                "b_col": brand_col, "m_col": model_col
-            })
-        except: continue
+df_all_categories = load_data()
+VEHICLE_CATEGORIES_KEYS = list(df_all_categories["Категория_Име"].unique())
 
-    if not parsed_files: return None
-    parsed_files = sorted(parsed_files, key=lambda x: x["sort_index"])
+col_cat, col_time = st.columns([1, 1])
+with col_cat:
+    st.markdown("##### Изберете категория")
+    selected_cat = st.pills("Категория", options=VEHICLE_CATEGORIES_KEYS, default=VEHICLE_CATEGORIES_KEYS[0], label_visibility="collapsed")
 
-    all_dfs = []
-    for item in parsed_files:
-        temp_df = item["df"].copy()
-        temp_df["Година"], temp_df["Месец"], temp_df["Период"], temp_df["Sort_Index"] = item["year"], item["month"], item["period_str"], item["sort_index"]
-
-        temp_df["Raw_Brand"] = temp_df[item["b_col"]].fillna("НЕИЗВЕСТНА").astype(str).str.strip().str.upper()
-        temp_df["Raw_Model"] = temp_df[item["m_col"]].fillna("НЕИЗВЕСТЕН").astype(str).str.strip().str.upper()
-
-        valid_mask = (
-            (~temp_df["Raw_Brand"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
-            (~temp_df["Raw_Model"].str.contains(SUMMARY_ROW_PATTERN, case=False, na=False, regex=True)) &
-            (temp_df["Raw_Brand"] != "")
-        )
-        temp_df = temp_df[valid_mask].copy()
-        if temp_df.empty: continue
-        
-        temp_df["Нови"] = temp_df[item["n_cols"]].sum(axis=1) if item["n_cols"] else 0
-        temp_df["Употр"] = temp_df[item["u_cols"]].sum(axis=1) if item["u_cols"] else 0
-        temp_df["Други"] = temp_df[item["o_cols"]].sum(axis=1) if item["o_cols"] else 0
-        
-        temp_df["Total_Cat"] = temp_df["Нови"] + temp_df["Употр"] + temp_df["Други"]
-        temp_df = temp_df[temp_df["Total_Cat"] > 0].copy()
-
-        clean_df = temp_df[["Sort_Index", "Година", "Месец", "Период", "Raw_Brand", "Raw_Model", "Нови", "Употр", "Други"]]
-        all_dfs.append(clean_df)
-
-    if not all_dfs: return None
-    raw_df = pd.concat(all_dfs, ignore_index=True)
-
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    mapping_file = os.path.join(BASE_DIR, "data", "brand_model_mapping_clean.csv")
-
-    def normalize_mapping_value(value, remove_punctuation=False):
-        if pd.isna(value): return ""
-        value = str(value)
-        value = unicodedata.normalize("NFKC", value)
-        value = value.replace("\ufeff", "").replace("\u200b", "").replace("\u200c", "").replace("\u200d", "").replace("\u00a0", " ")
-        value = value.replace("–", "-").replace("—", "-").replace("-", "-").replace("−", "-")
-        value = value.replace('"', "").replace("'", "")
-        value = re.sub(r"\s+", " ", value).strip().upper()
-        if remove_punctuation:
-            value = re.sub(r"[^0-9A-ZА-ЯЁЄІЇЬЪЮЯ\s]", "", value)
-            value = re.sub(r"\s+", "", value)
-        return value
-
-    if os.path.isfile(mapping_file):
-        try:
-            map_df = pd.read_csv(mapping_file, sep=",", dtype=str, encoding="utf-8-sig", keep_default_na=False)
-        except Exception:
-            try:
-                map_df = pd.read_csv(mapping_file, sep=",", dtype=str, encoding="utf-8", engine="python", keep_default_na=False)
-            except Exception:
-                try:
-                    map_df = pd.read_csv(mapping_file, sep=";", dtype=str, encoding="utf-8-sig", engine="python", keep_default_na=False)
-                except Exception:
-                    map_df = pd.DataFrame()
-
-        if not map_df.empty:
-            map_df.columns = [unicodedata.normalize("NFKC", str(c)).replace("\ufeff", "").replace('"', "").replace("'", "").strip() for c in map_df.columns]
-            required_columns = ["Raw_Brand", "Raw_Model", "Clean_Brand", "Clean_Model"]
-            missing_columns = [c for c in required_columns if c not in map_df.columns]
-
-            if missing_columns:
-                raw_df["Brand"] = raw_df["Raw_Brand"]
-                raw_df["Temp_Model"] = raw_df["Raw_Model"]
-            else:
-                map_df["_Brand_Key"] = map_df["Raw_Brand"].apply(lambda x: normalize_mapping_value(x, remove_punctuation=True))
-                map_df["_Model_Key"] = map_df["Raw_Model"].apply(lambda x: normalize_mapping_value(x))
-                map_df["Clean_Brand"] = map_df["Clean_Brand"].astype(str).replace(["nan", "NAN", "None", "NONE"], "").str.strip()
-                map_df["Clean_Model"] = map_df["Clean_Model"].astype(str).replace(["nan", "NAN", "None", "NONE"], "").str.strip()
-
-                def strip_raw_brand_from_model(brand, model):
-                    b = str(brand).strip().upper()
-                    m = str(model).strip().upper()
-                    if m.startswith(b) and len(m) > len(b):
-                        return m[len(b):].strip()
-                    return m
-
-                raw_df["_Stripped_Raw_Model"] = raw_df.apply(lambda row: strip_raw_brand_from_model(row["Raw_Brand"], row["Raw_Model"]), axis=1)
-                raw_df["_Brand_Key"] = raw_df["Raw_Brand"].apply(lambda x: normalize_mapping_value(x, remove_punctuation=True))
-                raw_df["_Model_Key"] = raw_df["_Stripped_Raw_Model"].apply(lambda x: normalize_mapping_value(x))
-
-                map_df = map_df[(map_df["_Brand_Key"] != "")].copy()
-
-                brand_map_df = map_df[["_Brand_Key", "Clean_Brand"]].copy()
-                brand_map_df = brand_map_df[brand_map_df["Clean_Brand"].astype(str).str.strip() != ""]
-                brand_map_df = brand_map_df.drop_duplicates(subset=["_Brand_Key"], keep="first")
-
-                model_map_df = map_df[["_Brand_Key", "_Model_Key", "Clean_Brand", "Clean_Model"]].copy()
-                model_map_df = model_map_df[model_map_df["_Model_Key"] != ""]
-                model_map_df = model_map_df.drop_duplicates(subset=["_Brand_Key", "_Model_Key"], keep="first")
-
-                raw_df = raw_df.merge(brand_map_df, on="_Brand_Key", how="left")
-                raw_df["Clean_Brand"] = raw_df["Clean_Brand"].fillna("").astype(str).str.strip()
-
-                raw_df = raw_df.merge(
-                    model_map_df[["_Brand_Key", "_Model_Key", "Clean_Brand", "Clean_Model"]].rename(
-                        columns={"Clean_Brand": "_Model_Clean_Brand", "Clean_Model": "_Model_Clean_Model"}
-                    ),
-                    on=["_Brand_Key", "_Model_Key"],
-                    how="left"
-                )
-
-                raw_df["Brand"] = (
-                    raw_df["_Model_Clean_Brand"].fillna("").replace("", pd.NA)
-                    .fillna(raw_df["Clean_Brand"]).fillna(raw_df["Raw_Brand"])
-                    .astype(str).str.strip()
-                )
-
-                raw_df["Temp_Model"] = (
-                    raw_df["_Model_Clean_Model"].fillna("").replace("", pd.NA)
-                    .fillna(raw_df["_Stripped_Raw_Model"])
-                    .astype(str).str.strip()
-                )
-        else:
-            raw_df["Brand"] = raw_df["Raw_Brand"]
-            raw_df["Temp_Model"] = raw_df["Raw_Model"]
-    else:
-        raw_df["Brand"] = raw_df["Raw_Brand"]
-        raw_df["Temp_Model"] = raw_df["Raw_Model"]
-
-    def clean_fallback_model(b, m):
-        b = str(b).strip()
-        m = str(m).strip()
-        if m.upper().startswith(b.upper()) and len(m) > len(b):
-            return m[len(b):].strip()
-        return m
-
-    raw_df["Model"] = [clean_fallback_model(b, m) for b, m in zip(raw_df["Brand"], raw_df["Temp_Model"])]
-    raw_df["Label"] = (raw_df["Brand"].astype(str).str.strip() + " " + raw_df["Model"].astype(str).str.strip()).str.strip()
-
-    raw_df.drop(columns=["_Brand_Key", "_Model_Key", "Clean_Brand", "_Model_Clean_Brand", "_Model_Clean_Model"], errors="ignore", inplace=True)
-
-    agg_df = raw_df.groupby(
-        ["Sort_Index", "Година", "Месец", "Период", "Brand", "Model", "Label"],
-        as_index=False
-    )[["Нови", "Употр", "Други"]].sum()
-
-    agg_df = agg_df.sort_values(by=["Sort_Index", "Brand", "Model"])
-
-    for col in ["Нови", "Употр", "Други"]:
-        agg_df[f"{col}_Месец"] = (
-            agg_df.groupby(["Година", "Brand", "Model"])[col]
-            .diff().fillna(agg_df[col]).clip(lower=0)
-        )
-
-    return agg_df
-
-csv_files = glob.glob(os.path.join("data", "*.csv")) + glob.glob(os.path.join("data", "*.gz")) + glob.glob(os.path.join("data", "*.zip"))
-
-if not csv_files:
-    st.info("Няма намерени CSV/ZIP файлове в папка 'data'. Моля, добави ги през GitHub.")
+if not selected_cat: 
     st.stop()
 
-file_bytes_list, file_names = [], []
-for file_path in csv_files:
-    with open(file_path, "rb") as f: file_bytes_list.append(f.read())
-    file_names.append(os.path.basename(file_path))
-
-with st.spinner(f"Зареждане и оптимизиране на данни за {selected_cat}..."):
-    df_full = load_and_process(tuple(file_bytes_list), tuple(file_names), selected_cat)
-
-if df_full is None or df_full.empty:
-    st.error(f"Няма налични данни за категория '{selected_cat}'.")
-    st.stop()
+# Вземаме данните за избраната категория
+df_full = df_all_categories[df_all_categories["Категория_Име"] == selected_cat].copy()
 
 # ----------------------------------------------------------------------------------
 # ВРЕМЕВИ ПРОЗОРЕЦ И РЕЖИМ НА АНАЛИЗ (КОРИГИРАНА LOGIKA ЗА KPI & YOY)
