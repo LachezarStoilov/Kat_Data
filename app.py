@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 import os
 
 # ====================================================================================
-# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V11 - BI Executive Upgrade)
+# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V12 - Executive Redesign)
 # ====================================================================================
 
-st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wide")
+st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
 
 # ----------------------------------------------------------------------------------
 # ДИЗАЙН ТОКЕНИ (цвят / типография)
@@ -499,10 +499,10 @@ for df_target in [df_working, df_kpi_curr, df_prev]:
         df_target["Всички"] = df_target["Нови"] + df_target["Вторичен Пазар"]
 
 # ----------------------------------------------------------------------------------
-# ТАБОВЕ ЗА АНАЛИЗ (С ВЛЮЧЕН НОВ ТАБ "🌐 ОБЗОР")
+# ТАБОВЕ ЗА АНАЛИЗ (БЕЗ ЕМОДЖИТА)
 # ----------------------------------------------------------------------------------
 tab_overview, tab_brand, tab_model, tab_new, tab_used = st.tabs([
-    "🌐 ОБЗОР", "🏢 МАРКИ", "🚗 МОДЕЛИ", "🆕 НОВИ", "🔄 ВТОРИЧЕН"
+    "ОБЗОР", "МАРКИ", "МОДЕЛИ", "НОВИ", "ВТОРИЧЕН"
 ])
 
 # ====================================================================================
@@ -520,31 +520,35 @@ with tab_overview:
     )
 
     if metric_overview:
-        # 1. ЙЕРАРХИЧНА СТРУКТУРА (TREEMAP)
+        # 1. МОДЕРЕН МНОГОЦВЕТЕН TREEMAP
         st.markdown("<br>", unsafe_allow_html=True)
         tree_df = df_kpi_curr.groupby(["Brand", "Model"])[metric_overview].sum().reset_index()
         tree_df = tree_df[tree_df[metric_overview] > 0]
 
         if not tree_df.empty:
+            brand_colors = px.colors.qualitative.Bold + px.colors.qualitative.Prism + px.colors.qualitative.Safe
+            
             fig_tree = px.treemap(
                 tree_df,
                 path=[px.Constant("Всички Марки"), "Brand", "Model"],
                 values=metric_overview,
-                color=metric_overview,
-                color_continuous_scale=["#e0f2fe", "#38bdf8", "#0284c7", "#0f5257"],
-                title=f"ЙЕРАРХИЧНА СТРУКТУРА НА ПАЗАРА: {metric_overview.upper()} ({period_label_full})"
+                color="Brand",
+                color_discrete_sequence=brand_colors,
+                title=f"ИЕРАРХИЧНА СТРУКТУРА НА ПАЗАРА: {metric_overview.upper()} ({period_label_full})"
             )
             fig_tree.update_layout(
                 title=dict(font=TITLE_FONT),
-                height=460,
+                height=480,
                 margin=dict(t=50, l=10, r=10, b=10),
                 font=CHART_FONT,
                 paper_bgcolor='rgba(0,0,0,0)',
-                coloraxis_showscale=False
+                showlegend=False
             )
             fig_tree.update_traces(
-                hovertemplate="<b>%{label}</b><br>Обем: %{value:,.0f} бр.<extra></extra>".replace(",", " "),
-                textfont=dict(family="Manrope, sans-serif")
+                marker=dict(cornerradius=5),
+                marker_line_color="#ffffff",
+                marker_line_width=2,
+                hovertemplate="<b>%{label}</b><br>Обем: <b>%{value:,.0f} бр.</b><extra></extra>".replace(",", " ")
             )
             st.plotly_chart(fig_tree, config=PLOTLY_CONFIG, width="stretch")
 
@@ -584,7 +588,7 @@ with tab_overview:
 
                     max_g = top_momentum["Growth_Pct"].max()
                     fig_mom.update_layout(
-                        title=dict(text=f"РАДАР ЗА РАСТЕЖ: ТОП 10 МОДЕЛИ (МИН. 30 БР.)", font=TITLE_FONT),
+                        title=dict(text="РАДАР ЗА РАСТЕЖ: ТОП 10 МОДЕЛИ (МИН. 30 БР.)", font=TITLE_FONT),
                         height=420,
                         margin=dict(t=50, l=10, r=80, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -617,7 +621,7 @@ with tab_overview:
                     top_gainers = sig_df.tail(6)
                     div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
 
-                    colors_div = ["#059669" if d >= 0 else "#b91c1c" for d in div_df["Delta_PP"]]
+                    colors_div = ["#059669" if d >= 0 else "#dc2626" for d in div_df["Delta_PP"]]
                     labels_div = [f"+{d:.2f} %p" if d >= 0 else f"{d:.2f} %p" for d in div_df["Delta_PP"]]
 
                     fig_div = go.Figure(go.Bar(
@@ -635,7 +639,7 @@ with tab_overview:
                     pad_x = max(abs(min_x), abs(max_x)) * 1.35
 
                     fig_div.update_layout(
-                        title=dict(text="ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДДЯЛ (% ПУНКТОВЕ)", font=TITLE_FONT),
+                        title=dict(text="ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДЯЛ (% ПУНКТОВЕ)", font=TITLE_FONT),
                         height=420,
                         margin=dict(t=50, l=10, r=65, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -649,13 +653,80 @@ with tab_overview:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 3. КУМУЛАТИВНА YTD ТРАЕКТОРИЯ
+        # 3. АНАЛИТИЧЕН РАЗДЕЛ: ХИТМЕЙП (HEATMAPS) ЗА СЕЗОННОСТ И ДИНАМИКА
+        st.markdown(f'<div class="section-title" style="--tab-accent:#0284c7">Сезонност и месечна интензивност</div>', unsafe_allow_html=True)
+        
+        col_hm1, col_hm2 = st.columns(2)
+        month_names_dict = {1:"Яну", 2:"Фев", 3:"Мар", 4:"Апр", 5:"Май", 6:"Юни", 7:"Юли", 8:"Авг", 9:"Сеп", 10:"Окт", 11:"Ное", 12:"Дек"}
+
+        # 3.1. HEATMAP: ГОДИНИ x МЕСЕЦИ (СЕЗОННОСТ НА ПАЗАРА)
+        with col_hm1:
+            if not df_full.empty:
+                pivot_yr_m = df_full.groupby(["Година", "Месец"])[metric_overview].sum().unstack(level=1).fillna(0)
+                pivot_yr_m.columns = [month_names_dict.get(m, m) for m in pivot_yr_m.columns]
+                
+                fig_hm1 = px.imshow(
+                    pivot_yr_m,
+                    labels=dict(x="Месец", y="Година", color="Обем"),
+                    x=pivot_yr_m.columns,
+                    y=[str(y) for y in pivot_yr_m.index],
+                    color_continuous_scale="Tealgrn",
+                    text_auto=".0f",
+                    aspect="auto",
+                    title=f"СЕЗОННА ТОПЛИННА КАРТА ПО ГОДИНИ ({metric_overview.upper()})"
+                )
+                fig_hm1.update_layout(
+                    title=dict(font=TITLE_FONT),
+                    height=360,
+                    margin=dict(t=50, l=10, r=10, b=10),
+                    font=CHART_FONT,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
+                )
+                fig_hm1.update_xaxes(fixedrange=True)
+                fig_hm1.update_yaxes(fixedrange=True, type='category')
+                st.plotly_chart(fig_hm1, config=PLOTLY_CONFIG, width="stretch")
+
+        # 3.2. HEATMAP: ТОП 12 МАРКИ x МЕСЕЦИ ЗА ТЕКУЩАТА ГОДИНА (2026)
+        with col_hm2:
+            if not df_kpi_curr.empty:
+                top_12_b = df_kpi_curr.groupby("Brand")[metric_overview].sum().nlargest(12).index.tolist()
+                df_top12 = df_kpi_curr[df_kpi_curr["Brand"].isin(top_12_b)]
+                
+                pivot_b_m = df_top12.groupby(["Brand", "Месец"])[metric_overview].sum().unstack(level=1).fillna(0)
+                pivot_b_m = pivot_b_m.reindex(top_12_b) # Подреждаме по общ обем
+                pivot_b_m.columns = [month_names_dict.get(m, m) for m in pivot_b_m.columns]
+
+                fig_hm2 = px.imshow(
+                    pivot_b_m,
+                    labels=dict(x="Месец", y="Марка", color="Обем"),
+                    x=pivot_b_m.columns,
+                    y=pivot_b_m.index,
+                    color_continuous_scale="Viridis",
+                    text_auto=".0f",
+                    aspect="auto",
+                    title=f"МЕСЕЧНА ИНТЕНЗИВНОСТ НА ТОП 12 МАРКИ ПРЕЗ {period_label_full}"
+                )
+                fig_hm2.update_layout(
+                    title=dict(font=TITLE_FONT),
+                    height=360,
+                    margin=dict(t=50, l=10, r=10, b=10),
+                    font=CHART_FONT,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)'
+                )
+                fig_hm2.update_xaxes(fixedrange=True)
+                fig_hm2.update_yaxes(fixedrange=True, type='category')
+                st.plotly_chart(fig_hm2, config=PLOTLY_CONFIG, width="stretch")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 4. КУМУЛАТИВНА YTD ТРАЕКТОРИЯ
         if not df_working.empty:
             agg_cum = df_working.groupby(["Година", "Месец"])[metric_overview].sum().reset_index()
             agg_cum["Cumulative"] = agg_cum.groupby("Година")[metric_overview].cumsum()
 
-            month_names = {1:"Яну", 2:"Фев", 3:"Мар", 4:"Апр", 5:"Май", 6:"Юни", 7:"Юли", 8:"Авг", 9:"Сеп", 10:"Окт", 11:"Ное", 12:"Дек"}
-            agg_cum["Месец_Име"] = agg_cum["Месец"].map(month_names)
+            agg_cum["Месец_Име"] = agg_cum["Месец"].map(month_names_dict)
 
             fig_cum = go.Figure()
             years_cum = sorted(agg_cum["Година"].unique())
@@ -686,7 +757,7 @@ with tab_overview:
                 legend=dict(orientation="h", y=-0.22, x=0.5, xanchor="center"),
                 margin=dict(t=50, l=10, r=10, b=30)
             )
-            fig_cum.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names.values()))
+            fig_cum.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names_dict.values()))
             fig_cum.update_yaxes(fixedrange=True)
             st.plotly_chart(fig_cum, config=PLOTLY_CONFIG, width="stretch")
 
