@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import os
 
 # ====================================================================================
-# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V13 - Clean BI Edition)
+# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V14 - Fixed & Balanced BI)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -159,7 +159,7 @@ button[role="tab"] {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     font-weight: 700 !important;
-    font-size: 1.15rem !important; /* Значително увеличен размер */
+    font-size: 1.15rem !important;
     color: var(--slate) !important;
     background: transparent !important;
     border: none !important;
@@ -431,6 +431,13 @@ if not selected_cat:
 # Вземаме данните за избраната категория
 df_full = df_all_categories[df_all_categories["Категория_Име"] == selected_cat].copy()
 
+# ПОДГОТВЯМЕ МЕТРИКИТЕ В ГЛОБАЛНИЯ DF (ЗА ДА НЯМА KeyErrors)
+df_full["Нови"] = df_full["Нови_Месец"]
+df_full["Употребявани"] = df_full["Употр_Месец"]
+df_full["Пререгистрации"] = df_full["Други_Месец"]
+df_full["Вторичен Пазар"] = df_full["Употребявани"] + df_full["Пререгистрации"]
+df_full["Всички"] = df_full["Нови"] + df_full["Вторичен Пазар"]
+
 available_years = sorted(df_full["Година"].unique().tolist(), reverse=True)
 unique_periods = df_full[["Sort_Index", "Период"]].drop_duplicates().sort_values("Sort_Index")
 p_opts = unique_periods["Sort_Index"].tolist()
@@ -508,15 +515,6 @@ with col_time:
 
 st.markdown("---")
 
-# ПОДГОТОВКА НА КОЛОНИТЕ ЗА ВСИЧКИ СЕТОВЕ ДАННИ
-for df_target in [df_working, df_kpi_curr, df_prev]:
-    if not df_target.empty:
-        df_target["Нови"] = df_target["Нови_Месец"]
-        df_target["Употребявани"] = df_target["Употр_Месец"]
-        df_target["Пререгистрации"] = df_target["Други_Месец"]
-        df_target["Вторичен Пазар"] = df_target["Употребявани"] + df_target["Пререгистрации"]
-        df_target["Всички"] = df_target["Нови"] + df_target["Вторичен Пазар"]
-
 # ----------------------------------------------------------------------------------
 # ТАБОВЕ ЗА АНАЛИЗ (ГОЛЕМИ И ИЗПЪКВАЩИ ЗАГЛАВИЯ)
 # ----------------------------------------------------------------------------------
@@ -541,10 +539,10 @@ with tab_overview:
     if metric_overview:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 1. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 КОЛОНИ)
+        # 1. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 СИМЕТРИЧНИ КОЛОНИ ПО 15 ЕЛЕМЕНТА)
         col_ov1, col_ov2 = st.columns(2)
 
-        # 1.1. РАДАР ЗА РАСТЕЖ (MOMENTUM INDEX)
+        # 1.1. РАДАР ЗА РАСТЕЖ (ТОП 15 МОДЕЛА)
         with col_ov1:
             if not df_kpi_curr.empty and not df_prev.empty:
                 curr_models = df_kpi_curr.groupby("Label")[metric_overview].sum()
@@ -576,7 +574,7 @@ with tab_overview:
                     max_g = top_momentum["Growth_Pct"].max()
                     fig_mom.update_layout(
                         title=dict(text="РАДАР ЗА РАСТЕЖ: ТОП 15 МОДЕЛИ (МИН. 30 БР.)", font=TITLE_FONT),
-                        height=540,
+                        height=580,
                         margin=dict(t=50, l=10, r=80, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
@@ -589,7 +587,7 @@ with tab_overview:
                 else:
                     st.info("Няма предостатъчно обем за изчисление на 'Радар за растеж'.")
 
-        # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15)
+        # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15 С ОПТИМИЗИРАН СКЕЙЛ ДО 1.2%)
         with col_ov2:
             if not df_kpi_curr.empty and not df_prev.empty:
                 tot_curr = df_kpi_curr[metric_overview].sum()
@@ -604,14 +602,11 @@ with tab_overview:
 
                     sig_df = delta_df[(delta_df["Share_Curr"] >= 0.2) | (delta_df["Share_Prev"] >= 0.2)].sort_values("Delta_PP", ascending=True)
 
-                    # Топ 15 губещи и Топ 15 печеливши
                     top_losers = sig_df.head(15)
                     top_gainers = sig_df.tail(15)
                     div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
 
                     colors_div = ["#059669" if d >= 0 else "#dc2626" for d in div_df["Delta_PP"]]
-                    
-                    # ПРЕМАХНАТА БУКВА 'p' - само чист %
                     labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
 
                     fig_div = go.Figure(go.Bar(
@@ -625,18 +620,19 @@ with tab_overview:
                         customdata=div_df[["Share_Curr", "Share_Prev"]]
                     ))
 
-                    min_x, max_x = div_df["Delta_PP"].min(), div_df["Delta_PP"].max()
-                    pad_x = max(abs(min_x), abs(max_x)) * 1.35
+                    # ФИКСИРАН / ОПТИМИЗИРАН СКЕЙЛ ДО ~1.2% ЗА ДА ИЗПЪКНАТ БАРОВЕТЕ
+                    max_val_abs = max(abs(div_df["Delta_PP"].min()), abs(div_df["Delta_PP"].max()))
+                    x_bound = max(1.2, max_val_abs * 1.15)
 
                     fig_div.update_layout(
                         title=dict(text="ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДЯЛ (ТОП 15)", font=TITLE_FONT),
-                        height=max(540, len(div_df) * 25),
+                        height=580,
                         margin=dict(t=50, l=10, r=65, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
                         font=CHART_FONT
                     )
-                    fig_div.update_xaxes(fixedrange=True, range=[-pad_x if min_x < 0 else -1, pad_x if max_x > 0 else 1], showgrid=True, gridcolor="#eef1f5", zeroline=True, zerolinecolor="#cbd5e1")
+                    fig_div.update_xaxes(fixedrange=True, range=[-x_bound, x_bound], showgrid=True, gridcolor="#eef1f5", zeroline=True, zerolinecolor="#cbd5e1")
                     fig_div.update_yaxes(fixedrange=True)
                     fig_div = apply_plotly_mobile_lock(fig_div)
                     st.plotly_chart(fig_div, config=PLOTLY_CONFIG, width="stretch")
