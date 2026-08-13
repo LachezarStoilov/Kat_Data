@@ -640,37 +640,30 @@ with tab_model:
                 continue
             color = MODEL_COLORS[i % len(MODEL_COLORS)]
             max_val = max(max_val, model_df[metric_tab1].max())
+            short_name = model.split(" ", 1)[-1]
 
             fig.add_trace(go.Scatter(
-                x=model_df["Период"], y=model_df[metric_tab1], name=model, mode="lines+markers",
+                x=model_df["Период"], y=model_df[metric_tab1], name=short_name, mode="lines+markers",
                 line=dict(width=2.75, shape="spline", color=color),
                 marker=dict(size=6, color=color),
-                hovertemplate="%{y:,.0f} бр.<extra>%{fullData.name}</extra>"
-            ))
-
-            last_row = model_df.iloc[-1]
-            short_name = model.split(" ", 1)[-1]
-            fig.add_trace(go.Scatter(
-                x=[last_row["Период"]], y=[last_row[metric_tab1]],
-                mode="markers+text",
-                text=[f"  {short_name}: {fmt_num(last_row[metric_tab1])}"],
-                textposition="middle right",
-                textfont=dict(size=12, color=color, family="JetBrains Mono, monospace"),
-                marker=dict(size=9, color=color, line=dict(width=2, color="#ffffff")),
-                showlegend=False, hoverinfo="skip"
+                customdata=[model] * len(model_df),
+                hovertemplate="<b>%{customdata}</b><br>%{y:,.0f} бр.<extra></extra>"
             ))
 
         y_max_range = max_val * 1.15 if max_val > 0 else 10
+        legend_rows = 1 if len(sel_models) <= 4 else 2
+        bottom_margin = 45 + (legend_rows * 24)
 
         fig.update_layout(
-            template="plotly_white", height=420, font=CHART_FONT, hovermode="x unified",
+            template="plotly_white", height=360 + (legend_rows * 24), font=CHART_FONT, hovermode="x unified",
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
             hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
-            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center"),
-            margin=dict(t=20, l=10, r=115, b=30), dragmode=False
+            legend=dict(orientation="h", y=-0.22, x=0.5, xanchor="center", font=dict(size=11)),
+            margin=dict(t=20, l=10, r=15, b=bottom_margin), dragmode=False
         )
         fig.update_xaxes(fixedrange=True, showgrid=False)
         fig.update_yaxes(fixedrange=True, range=[0, y_max_range], showgrid=True, gridcolor="#eef1f5", zeroline=False)
+        fig.update_traces(cliponaxis=False)
 
         st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
 
