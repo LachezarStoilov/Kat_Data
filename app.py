@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import os
 
 # ====================================================================================
-# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V10 - Parquet Fast Loading)
+# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V11 - BI Executive Upgrade)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wide")
@@ -13,10 +13,11 @@ st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="🏁", layout="wi
 # ----------------------------------------------------------------------------------
 # ДИЗАЙН ТОКЕНИ (цвят / типография)
 # ----------------------------------------------------------------------------------
-TAB_ACCENT_BRAND = "#0f5257"   # тъмен петрол-тийл - раздел МАРКИ
-TAB_ACCENT_MODEL = "#334155"  # неутрален графит - раздел МОДЕЛИ
-TAB_ACCENT_NEW = "#b45309"    # кехлибар/ръжда - раздел НОВИ
-TAB_ACCENT_USED = "#2563a6"   # стоманено синьо - раздел ВТОРИЧЕН ПАЗАР
+TAB_ACCENT_OVERVIEW = "#0f5257" # тийл - раздел ОБЗОР
+TAB_ACCENT_BRAND = "#0f5257"    # тъмен петрол-тийл - раздел МАРКИ
+TAB_ACCENT_MODEL = "#334155"    # неутрален графит - раздел МОДЕЛИ
+TAB_ACCENT_NEW = "#b45309"      # кехлибар/ръжда - раздел НОВИ
+TAB_ACCENT_USED = "#2563a6"     # стоманено синьо - раздел ВТОРИЧЕН ПАЗАР
 
 CHART_FONT = dict(family="Manrope, sans-serif", size=12, color="#14181f")
 TITLE_FONT = dict(family="Oswald, sans-serif", size=15, color="#14181f")
@@ -159,7 +160,7 @@ button[role="tab"] {
 button[role="tab"][aria-selected="true"] { color: var(--ink) !important; border-bottom: 2px solid var(--amber) !important; }
 button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,87,0.06) !important; }
 
-/* PILLS - fallback ако темата не покрие всичко */
+/* PILLS */
 [data-testid="stPills"] button[aria-pressed="true"],
 [data-testid="stPills"] button[aria-checked="true"] {
     background: var(--brand) !important;
@@ -167,9 +168,8 @@ button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,
     border-color: var(--brand) !important;
 }
 
-/* MULTISELECT ТАГОВЕ (Години / Модели) */
+/* MULTISELECT ТАГОВЕ */
 [data-baseweb="tag"] {
-
     background-color: rgba(15, 82, 87, 0.10) !important;
     border: 1px solid rgba(15, 82, 87, 0.35) !important;
     border-radius: 8px !important;
@@ -181,7 +181,6 @@ button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,
 [data-baseweb="tag"] svg { fill: #0f5257 !important; }
 [data-baseweb="tag"]:hover { background-color: rgba(15, 82, 87, 0.18) !important; }
 
-/* Кутийка на select/multiselect */
 [data-baseweb="select"] > div {
     border-radius: 10px !important;
     border-color: var(--border) !important;
@@ -232,7 +231,7 @@ button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,
     [data-testid="stPills"] { max-width: 100% !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     [data-testid="stPills"]::-webkit-scrollbar { display: none; }
 
-   [data-testid="stPlotlyChart"] { max-width: 100% !important; width: 100% !important; overflow: visible !important; }
+    [data-testid="stPlotlyChart"] { max-width: 100% !important; width: 100% !important; overflow: visible !important; }
     .js-plotly-plot, .plot-container { max-width: 100% !important; width: 100% !important; overflow-x: hidden !important; overflow-y: visible !important; }
     [data-testid="stDataFrame"] { max-width: 100% !important; overflow-x: auto !important; }
 
@@ -266,7 +265,7 @@ st.markdown(f"""
 <div class="hero-right">
 <div class="meta-badge">
 <div class="meta-label">Статус на системата</div>
-<div class="meta-value"><span class="status-dot"></span>Данни: 2022 до 2026</div>
+<div class="meta-value"><span class="status-dot"></span>Данни: 04.2022 до 2026</div>
 </div>
 <div class="meta-badge">
 <div class="meta-label">Източник</div>
@@ -375,7 +374,7 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key, width="stretch")
 
 # ----------------------------------------------------------------------------------
-# ЗАРЕЖДАНЕ НА PARQUET БАЗАТА ДАННИ
+# ЗАРЕЖДАНЕ НА PARQUET БАЗАТА ДАННИ И ФИЛТРИРАНЕ НА СТАРТОВАТА АНОМАЛИЯ (03.2022)
 # ----------------------------------------------------------------------------------
 @st.cache_data
 def load_data():
@@ -383,7 +382,11 @@ def load_data():
     if not os.path.exists(parquet_file):
         st.error("Файлът 'data/kat_data_clean.parquet' липсва! Моля, качете го в GitHub.")
         st.stop()
-    return pd.read_parquet(parquet_file)
+    df = pd.read_parquet(parquet_file)
+    
+    # ПРЕМАХВАНЕ НА СТАРТОВАТА АНОМАЛИЯ 03.2022 (КАТ натрупан стартов месец)
+    df = df[df["Sort_Index"] != 202203].copy()
+    return df
 
 df_all_categories = load_data()
 VEHICLE_CATEGORIES_KEYS = list(df_all_categories["Категория_Име"].unique())
@@ -496,10 +499,201 @@ for df_target in [df_working, df_kpi_curr, df_prev]:
         df_target["Всички"] = df_target["Нови"] + df_target["Вторичен Пазар"]
 
 # ----------------------------------------------------------------------------------
-# ТАБОВЕ ЗА АНАЛИЗ
+# ТАБОВЕ ЗА АНАЛИЗ (С ВЛЮЧЕН НОВ ТАБ "🌐 ОБЗОР")
 # ----------------------------------------------------------------------------------
-tab_brand, tab_model, tab_new, tab_used = st.tabs(["МАРКИ", "МОДЕЛИ", "НОВИ", "ВТОРИЧЕН"])
+tab_overview, tab_brand, tab_model, tab_new, tab_used = st.tabs([
+    "🌐 ОБЗОР", "🏢 МАРКИ", "🚗 МОДЕЛИ", "🆕 НОВИ", "🔄 ВТОРИЧЕН"
+])
 
+# ====================================================================================
+# ТАБ 1: ОБЗОР (ЕКЗЕКУТИВ ПАНЕЛ)
+# ====================================================================================
+with tab_overview:
+    st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_OVERVIEW}">Стратегически макроглед върху пазара ({period_label_full})</div>', unsafe_allow_html=True)
+    
+    col_ov_m, _ = st.columns([1, 1])
+    metric_overview = col_ov_m.pills(
+        "Изследвана метрика за Обзор:", 
+        options=["Нови", "Употребявани", "Пререгистрации", "Всички"], 
+        default="Всички", 
+        key="pill_overview"
+    )
+
+    if metric_overview:
+        # 1. ЙЕРАРХИЧНА СТРУКТУРА (TREEMAP)
+        st.markdown("<br>", unsafe_allow_html=True)
+        tree_df = df_kpi_curr.groupby(["Brand", "Model"])[metric_overview].sum().reset_index()
+        tree_df = tree_df[tree_df[metric_overview] > 0]
+
+        if not tree_df.empty:
+            fig_tree = px.treemap(
+                tree_df,
+                path=[px.Constant("Всички Марки"), "Brand", "Model"],
+                values=metric_overview,
+                color=metric_overview,
+                color_continuous_scale=["#e0f2fe", "#38bdf8", "#0284c7", "#0f5257"],
+                title=f"ЙЕРАРХИЧНА СТРУКТУРА НА ПАЗАРА: {metric_overview.upper()} ({period_label_full})"
+            )
+            fig_tree.update_layout(
+                title=dict(font=TITLE_FONT),
+                height=460,
+                margin=dict(t=50, l=10, r=10, b=10),
+                font=CHART_FONT,
+                paper_bgcolor='rgba(0,0,0,0)',
+                coloraxis_showscale=False
+            )
+            fig_tree.update_traces(
+                hovertemplate="<b>%{label}</b><br>Обем: %{value:,.0f} бр.<extra></extra>".replace(",", " "),
+                textfont=dict(family="Manrope, sans-serif")
+            )
+            st.plotly_chart(fig_tree, config=PLOTLY_CONFIG, width="stretch")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 2. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 КОЛОНИ)
+        col_ov1, col_ov2 = st.columns(2)
+
+        # 2.1. РАДАР ЗА РАСТЕЖ (MOMENTUM INDEX)
+        with col_ov1:
+            if not df_kpi_curr.empty and not df_prev.empty:
+                curr_models = df_kpi_curr.groupby("Label")[metric_overview].sum()
+                prev_models = df_prev.groupby("Label")[metric_overview].sum()
+
+                comp_df = pd.DataFrame({"Curr": curr_models, "Prev": prev_models}).fillna(0)
+                comp_df = comp_df[(comp_df["Curr"] >= 30) & (comp_df["Prev"] >= 10)].copy()
+
+                if not comp_df.empty:
+                    comp_df["Growth_Pct"] = ((comp_df["Curr"] - comp_df["Prev"]) / comp_df["Prev"]) * 100
+                    top_momentum = comp_df.sort_values("Growth_Pct", ascending=False).head(10).sort_values("Growth_Pct", ascending=True)
+
+                    fig_mom = go.Figure(go.Bar(
+                        x=top_momentum["Growth_Pct"],
+                        y=top_momentum.index,
+                        orientation="h",
+                        text=[f"+{g:.1f}% ({int(c)} бр.)" for g, c in zip(top_momentum["Growth_Pct"], top_momentum["Curr"])],
+                        textposition="outside",
+                        marker=dict(
+                            color=top_momentum["Growth_Pct"],
+                            colorscale=["#38bdf8", "#0f5257", "#14b8a6"],
+                            line=dict(width=0),
+                            cornerradius=6
+                        ),
+                        hovertemplate="<b>%{y}</b><br>Ръст: +%{x:.1f}%<br>Текущ обем: %{customdata[0]:,.0f} бр.<br>Предходен обем: %{customdata[1]:,.0f} бр.<extra></extra>".replace(",", " "),
+                        customdata=top_momentum[["Curr", "Prev"]]
+                    ))
+
+                    max_g = top_momentum["Growth_Pct"].max()
+                    fig_mom.update_layout(
+                        title=dict(text=f"РАДАР ЗА РАСТЕЖ: ТОП 10 МОДЕЛИ (МИН. 30 БР.)", font=TITLE_FONT),
+                        height=420,
+                        margin=dict(t=50, l=10, r=80, b=10),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=CHART_FONT
+                    )
+                    fig_mom.update_xaxes(fixedrange=True, range=[0, max_g * 1.3 if max_g > 0 else 100], showgrid=True, gridcolor="#eef1f5")
+                    fig_mom.update_yaxes(fixedrange=True)
+                    fig_mom = apply_plotly_mobile_lock(fig_mom)
+                    st.plotly_chart(fig_mom, config=PLOTLY_CONFIG, width="stretch")
+                else:
+                    st.info("Няма предостатъчно обем за изчисление на 'Радар за растеж'.")
+
+        # 2.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (DIVERGING BAR CHART)
+        with col_ov2:
+            if not df_kpi_curr.empty and not df_prev.empty:
+                tot_curr = df_kpi_curr[metric_overview].sum()
+                tot_prev = df_prev[metric_overview].sum()
+
+                if tot_curr > 0 and tot_prev > 0:
+                    curr_b_share = (df_kpi_curr.groupby("Brand")[metric_overview].sum() / tot_curr) * 100
+                    prev_b_share = (df_prev.groupby("Brand")[metric_overview].sum() / tot_prev) * 100
+
+                    delta_df = pd.DataFrame({"Share_Curr": curr_b_share, "Share_Prev": prev_b_share}).fillna(0)
+                    delta_df["Delta_PP"] = delta_df["Share_Curr"] - delta_df["Share_Prev"]
+
+                    sig_df = delta_df[(delta_df["Share_Curr"] >= 0.3) | (delta_df["Share_Prev"] >= 0.3)].sort_values("Delta_PP", ascending=True)
+
+                    top_losers = sig_df.head(6)
+                    top_gainers = sig_df.tail(6)
+                    div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
+
+                    colors_div = ["#059669" if d >= 0 else "#b91c1c" for d in div_df["Delta_PP"]]
+                    labels_div = [f"+{d:.2f} %p" if d >= 0 else f"{d:.2f} %p" for d in div_df["Delta_PP"]]
+
+                    fig_div = go.Figure(go.Bar(
+                        x=div_df["Delta_PP"],
+                        y=div_df.index,
+                        orientation="h",
+                        text=labels_div,
+                        textposition="outside",
+                        marker=dict(color=colors_div, line=dict(width=0), cornerradius=5),
+                        hovertemplate="<b>%{y}</b><br>Промяна дял: %{x:+.2f} %p<br>Текущ дял: %{customdata[0]:.2f}%<br>Предходен дял: %{customdata[1]:.2f}%<extra></extra>",
+                        customdata=div_df[["Share_Curr", "Share_Prev"]]
+                    ))
+
+                    min_x, max_x = div_df["Delta_PP"].min(), div_df["Delta_PP"].max()
+                    pad_x = max(abs(min_x), abs(max_x)) * 1.35
+
+                    fig_div.update_layout(
+                        title=dict(text="ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДДЯЛ (% ПУНКТОВЕ)", font=TITLE_FONT),
+                        height=420,
+                        margin=dict(t=50, l=10, r=65, b=10),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=CHART_FONT
+                    )
+                    fig_div.update_xaxes(fixedrange=True, range=[-pad_x if min_x < 0 else -1, pad_x if max_x > 0 else 1], showgrid=True, gridcolor="#eef1f5", zeroline=True, zerolinecolor="#cbd5e1")
+                    fig_div.update_yaxes(fixedrange=True)
+                    fig_div = apply_plotly_mobile_lock(fig_div)
+                    st.plotly_chart(fig_div, config=PLOTLY_CONFIG, width="stretch")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 3. КУМУЛАТИВНА YTD ТРАЕКТОРИЯ
+        if not df_working.empty:
+            agg_cum = df_working.groupby(["Година", "Месец"])[metric_overview].sum().reset_index()
+            agg_cum["Cumulative"] = agg_cum.groupby("Година")[metric_overview].cumsum()
+
+            month_names = {1:"Яну", 2:"Фев", 3:"Мар", 4:"Апр", 5:"Май", 6:"Юни", 7:"Юли", 8:"Авг", 9:"Сеп", 10:"Окт", 11:"Ное", 12:"Дек"}
+            agg_cum["Месец_Име"] = agg_cum["Месец"].map(month_names)
+
+            fig_cum = go.Figure()
+            years_cum = sorted(agg_cum["Година"].unique())
+            cum_colors = {2026: "#0f5257", 2025: "#2563a6", 2024: "#b45309", 2023: "#64748b", 2022: "#94a3b8"}
+
+            for yr in years_cum:
+                yr_data = agg_cum[agg_cum["Година"] == yr].sort_values("Месец")
+                is_latest = (yr == max(years_cum))
+                line_color = cum_colors.get(yr, "#64748b")
+
+                fig_cum.add_trace(go.Scatter(
+                    x=yr_data["Месец_Име"],
+                    y=yr_data["Cumulative"],
+                    name=str(yr),
+                    mode="lines+markers",
+                    line=dict(color=line_color, width=3.5 if is_latest else 2, shape="spline"),
+                    marker=dict(size=7 if is_latest else 4),
+                    fill="tozeroy" if is_latest else None,
+                    fillcolor=hex_to_rgba(line_color, 0.12) if is_latest else None,
+                    hovertemplate="%{y:,.0f} бр.<extra>%{fullData.name}</extra>".replace(",", " ")
+                ))
+
+            fig_cum.update_layout(
+                title=dict(text=f"КУМУЛАТИВНА YTD ТРАЕКТОРИЯ ПО ГОДИНИ ({metric_overview.upper()})", font=TITLE_FONT),
+                template="plotly_white", height=380, dragmode=False, font=CHART_FONT,
+                hovermode="x unified", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
+                legend=dict(orientation="h", y=-0.22, x=0.5, xanchor="center"),
+                margin=dict(t=50, l=10, r=10, b=30)
+            )
+            fig_cum.update_xaxes(fixedrange=True, categoryorder='array', categoryarray=list(month_names.values()))
+            fig_cum.update_yaxes(fixedrange=True)
+            st.plotly_chart(fig_cum, config=PLOTLY_CONFIG, width="stretch")
+
+
+# ====================================================================================
+# ТАБ 2: МАРКИ
+# ====================================================================================
 with tab_brand:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_BRAND}">Цялостен анализ на портфолиото на избрана марка</div>', unsafe_allow_html=True)
 
@@ -573,6 +767,9 @@ with tab_brand:
 
         st.plotly_chart(fig_b_models, config=PLOTLY_CONFIG, width="stretch")
 
+# ====================================================================================
+# ТАБ 3: МОДЕЛИ
+# ====================================================================================
 with tab_model:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_MODEL}">Сравнителен анализ на конкретни модели</div>', unsafe_allow_html=True)
     model_volumes = df_working.groupby(["Brand", "Label"])["Всички"].sum().reset_index()
@@ -647,7 +844,7 @@ with tab_model:
                 line=dict(width=2.75, shape="spline", color=color),
                 marker=dict(size=6, color=color),
                 customdata=[model] * len(model_df),
-                hovertemplate="<b>%{customdata}</b><br>%{y:,.0f} бр.<extra></extra>"
+                hovertemplate="<b>%{customdata}</b><br>%{y:,.0f} бр.<extra></extra>".replace(",", " ")
             ))
 
         y_max_range = max_val * 1.15 if max_val > 0 else 10
@@ -712,6 +909,9 @@ with tab_model:
         )
         pc2.plotly_chart(fig_pie_2, config=PLOTLY_CONFIG, width="stretch")
 
+# ====================================================================================
+# ТАБ 4: НОВИ
+# ====================================================================================
 with tab_new:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_NEW}">Пазарен дял и лидери (НОВИ МПС) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
 
@@ -760,6 +960,9 @@ with tab_new:
             "Дял %": st.column_config.ProgressColumn("Пазарен Дял", format="%.2f%%", min_value=0, max_value=market_table_new["Дял %"].max())
         })
 
+# ====================================================================================
+# ТАБ 5: ВТОРИЧЕН ПАЗАР
+# ====================================================================================
 with tab_used:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_USED}">Вторичен пазар (Употребявани + Пререгистрации) <span style="font-size:0.85rem; color:#64748b; font-weight:normal; text-transform:none; letter-spacing:normal;">| Период: {period_label_full}</span></div>', unsafe_allow_html=True)
 
