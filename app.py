@@ -232,7 +232,8 @@ button[role="tab"]:hover { color: var(--ink) !important; background: rgba(15,82,
     [data-testid="stPills"] { max-width: 100% !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     [data-testid="stPills"]::-webkit-scrollbar { display: none; }
 
-    [data-testid="stPlotlyChart"], .js-plotly-plot, .plot-container { max-width: 100% !important; width: 100% !important; overflow: hidden !important; }
+   [data-testid="stPlotlyChart"] { max-width: 100% !important; width: 100% !important; overflow: visible !important; }
+    .js-plotly-plot, .plot-container { max-width: 100% !important; width: 100% !important; overflow-x: hidden !important; overflow-y: visible !important; }
     [data-testid="stDataFrame"] { max-width: 100% !important; overflow-x: auto !important; }
 
     .section-title { font-size: 1rem; line-height: 1.35; margin-top: 1rem; }
