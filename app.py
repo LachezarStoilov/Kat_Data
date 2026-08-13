@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import os
 
 # ====================================================================================
-# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V14 - Fixed & Balanced BI)
+# AUTO MOTO SALES BG - DASHBOARD PANEL EDITION (V15 - Perfectly Aligned BI)
 # ====================================================================================
 
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
@@ -65,7 +65,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
         linear-gradient(135deg, #101a23 0%, #16232e 60%, #16232e 100%);
     border-radius: var(--radius-xl);
     padding: 1.85rem 2.4rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -142,7 +142,7 @@ html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-colo
 .section-title {
     font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.02em;
     font-size: 1.1rem; font-weight: 600; color: var(--ink);
-    margin: 1.5rem 0 1rem 0; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border);
+    margin: 1.2rem 0 0.8rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 0.55rem;
 }
 .section-title::before { content: ""; width: 4px; height: 18px; border-radius: 3px; background: var(--tab-accent, var(--brand)); flex-shrink: 0; }
@@ -152,7 +152,7 @@ div[data-baseweb="tab-list"] {
     gap: 8px;
     border-bottom: 2px solid var(--border);
     padding-bottom: 2px;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1rem;
 }
 button[role="tab"] {
     font-family: 'Oswald', sans-serif;
@@ -164,8 +164,8 @@ button[role="tab"] {
     background: transparent !important;
     border: none !important;
     border-bottom: 3px solid transparent !important;
-    padding: 12px 20px !important;
-    margin-right: 16px !important;
+    padding: 10px 18px !important;
+    margin-right: 12px !important;
     border-radius: 8px 8px 0 0 !important;
     transition: all .18s ease;
 }
@@ -411,19 +411,16 @@ df_all_categories = load_data()
 VEHICLE_CATEGORIES_KEYS = list(df_all_categories["Категория_Име"].unique())
 
 # ----------------------------------------------------------------------------------
-# ГЛАВНИ ФИЛТРИ (1 РЕД: КАТЕГОРИЯ ВЛЯВО, ВРЕМЕВИ ПРОЗОРЕЦ ВДЯСНО)
+# ПРЕМАХНАТО ПРАЗНОТО ПРОСТРАНСТВО: БАЛАНСИРАН И КОМПАКТЕН БЛОК С ФИЛТРИ
 # ----------------------------------------------------------------------------------
-col_cat, col_time = st.columns([1, 1])
-
-with col_cat:
-    st.markdown("##### Изберете категория")
-    selected_cat = st.pills(
-        "Категория", 
-        options=VEHICLE_CATEGORIES_KEYS, 
-        default=VEHICLE_CATEGORIES_KEYS[0], 
-        label_visibility="collapsed",
-        key="pill_category_main"
-    )
+st.markdown("##### Изберете категория")
+selected_cat = st.pills(
+    "Категория", 
+    options=VEHICLE_CATEGORIES_KEYS, 
+    default=VEHICLE_CATEGORIES_KEYS[0], 
+    label_visibility="collapsed",
+    key="pill_category_main"
+)
 
 if not selected_cat: 
     st.stop()
@@ -431,7 +428,7 @@ if not selected_cat:
 # Вземаме данните за избраната категория
 df_full = df_all_categories[df_all_categories["Категория_Име"] == selected_cat].copy()
 
-# ПОДГОТВЯМЕ МЕТРИКИТЕ В ГЛОБАЛНИЯ DF (ЗА ДА НЯМА KeyErrors)
+# ПОДГОТВЯМЕ МЕТРИКИТЕ В ГЛОБАЛНИЯ DF
 df_full["Нови"] = df_full["Нови_Месец"]
 df_full["Употребявани"] = df_full["Употр_Месец"]
 df_full["Пререгистрации"] = df_full["Други_Месец"]
@@ -444,8 +441,10 @@ p_opts = unique_periods["Sort_Index"].tolist()
 p_lbls = unique_periods["Период"].tolist()
 period_lookup = dict(zip(p_opts, p_lbls))
 
-with col_time:
-    st.markdown("##### Времеви прозорец и Режим")
+col_mode_sub, col_years_sub = st.columns([1, 1])
+
+with col_mode_sub:
+    st.markdown("##### Времеви режим")
     analysis_mode = st.radio(
         "Режим:",
         options=["Година спрямо Година (YoY)", "Избран диапазон (Период)"],
@@ -453,11 +452,19 @@ with col_time:
         label_visibility="collapsed"
     )
 
+with col_years_sub:
+    st.markdown("##### Времеви прозорец (Години)")
     if analysis_mode == "Година спрямо Година (YoY)":
+        # DEFAULT: 2026 и 2025
         default_yrs = [y for y in [2026, 2025] if y in available_years]
         if not default_yrs and available_years: default_yrs = [available_years[0]]
 
-        selected_years = st.multiselect("Избери години за сравнение:", options=available_years, default=default_yrs)
+        selected_years = st.multiselect(
+            "Избери години за сравнение:", 
+            options=available_years, 
+            default=default_yrs,
+            label_visibility="collapsed"
+        )
         if not selected_years:
             st.warning("Моля, изберете поне една година.")
             st.stop()
@@ -529,17 +536,18 @@ with tab_overview:
     st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_OVERVIEW}">Стратегически анализ върху пазара ({period_label_full})</div>', unsafe_allow_html=True)
     
     col_ov_m, _ = st.columns([1, 1])
+    # DEFAULT ПО ПОДРАЗБИРАНЕ -> "Нови"
     metric_overview = col_ov_m.pills(
         "Изследвана метрика за Обзор:", 
         options=["Нови", "Употребявани", "Пререгистрации", "Всички"], 
-        default="Всички", 
+        default="Нови", 
         key="pill_overview"
     )
 
     if metric_overview:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # 1. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 СИМЕТРИЧНИ КОЛОНИ ПО 15 ЕЛЕМЕНТА)
+        # 1. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 СИМЕТРИЧНИ КОЛОНИ)
         col_ov1, col_ov2 = st.columns(2)
 
         # 1.1. РАДАР ЗА РАСТЕЖ (ТОП 15 МОДЕЛА)
@@ -587,7 +595,7 @@ with tab_overview:
                 else:
                     st.info("Няма предостатъчно обем за изчисление на 'Радар за растеж'.")
 
-        # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15 С ОПТИМИЗИРАН СКЕЙЛ ДО 1.2%)
+        # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15)
         with col_ov2:
             if not df_kpi_curr.empty and not df_prev.empty:
                 tot_curr = df_kpi_curr[metric_overview].sum()
@@ -620,7 +628,6 @@ with tab_overview:
                         customdata=div_df[["Share_Curr", "Share_Prev"]]
                     ))
 
-                    # ФИКСИРАН / ОПТИМИЗИРАН СКЕЙЛ ДО ~1.2% ЗА ДА ИЗПЪКНАТ БАРОВЕТЕ
                     max_val_abs = max(abs(div_df["Delta_PP"].min()), abs(div_df["Delta_PP"].max()))
                     x_bound = max(1.2, max_val_abs * 1.15)
 
@@ -663,17 +670,18 @@ with tab_overview:
                 )
                 fig_hm1.update_layout(
                     title=dict(font=TITLE_FONT),
-                    height=360,
+                    height=380,
                     margin=dict(t=50, l=10, r=10, b=10),
                     font=CHART_FONT,
                     paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    coloraxis_showscale=False # Премахване на страничната скала/слайдър
                 )
                 fig_hm1.update_xaxes(fixedrange=True)
                 fig_hm1.update_yaxes(fixedrange=True, type='category')
                 st.plotly_chart(fig_hm1, config=PLOTLY_CONFIG, width="stretch")
 
-        # 2.2. HEATMAP: ТОП 12 МАРКИ x МЕСЕЦИ
+        # 2.2. HEATMAP: ТОП 12 МАРКИ x МЕСЕЦИ (БЕЗ РАЗМЕСТВАЩА СКАЛА/СКРОЛБАР)
         with col_hm2:
             if not df_kpi_curr.empty:
                 top_12_b = df_kpi_curr.groupby("Brand")[metric_overview].sum().nlargest(12).index.tolist()
@@ -695,11 +703,12 @@ with tab_overview:
                 )
                 fig_hm2.update_layout(
                     title=dict(font=TITLE_FONT),
-                    height=360,
-                    margin=dict(t=50, l=10, r=10, b=10),
+                    height=380,
+                    margin=dict(t=50, l=110, r=10, b=10), # Фиксиран ляв марж за марките
                     font=CHART_FONT,
                     paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)'
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    coloraxis_showscale=False # Без излишни скали/слайдери отстрани
                 )
                 fig_hm2.update_xaxes(fixedrange=True)
                 fig_hm2.update_yaxes(fixedrange=True, type='category')
@@ -770,7 +779,7 @@ with tab_brand:
     col_b1, col_b2 = st.columns([1, 2])
 
     selected_brand = col_b1.selectbox("Избери марка за детайлен преглед:", options=ordered_brands, index=ordered_brands.index(default_b) if default_b in ordered_brands else 0, format_func=format_brand_option)
-    metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_brand")
+    metric_brand = st.pills("Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Нови", key="pill_brand")
 
     if selected_brand and metric_brand:
         brand_data_kpi = df_kpi_curr[df_kpi_curr["Brand"] == selected_brand]
@@ -858,7 +867,7 @@ with tab_model:
     sel_models = col_f2.multiselect("2. Избери модели за сравнение:", options=available_labels, default=def_models)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    metric_tab1 = st.pills("3. Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Всички", key="pill_model")
+    metric_tab1 = st.pills("3. Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Нови", key="pill_model")
 
     MODEL_COLORS = ["#0f5257", "#b45309", "#2563a6", "#7c3aed", "#be185d", "#0d9488", "#64748b"]
 
