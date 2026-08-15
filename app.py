@@ -21,13 +21,6 @@ TAB_ACCENT_USED = "#2563a6"     # стоманено синьо - раздел �
 
 CHART_FONT = dict(family="Manrope, sans-serif", size=12, color="#14181f")
 TITLE_FONT = dict(family="Oswald, sans-serif", size=15, color="#14181f")
-BRAND_HEATMAP_SCALE = [
-    [0.0, "#dcece9"],
-    [0.25, "#a8d3cb"],
-    [0.5, "#5fa39c"],
-    [0.75, "#1f6b66"],
-    [1.0, "#0f5257"]
-]
 
 st.markdown("""
 <style>
@@ -554,39 +547,6 @@ with tab_overview:
     if metric_overview:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # --- EXECUTIVE SUMMARY ---
-        if not df_kpi_curr.empty:
-            tot_curr_summary = df_kpi_curr[metric_overview].sum()
-            tot_prev_summary = df_prev[metric_overview].sum() if has_prev_period and not df_prev.empty else None
-            growth_summary = get_growth_data(tot_curr_summary, tot_prev_summary)
-
-            top_brand_row = df_kpi_curr.groupby("Brand")[metric_overview].sum().sort_values(ascending=False)
-            leader_brand_summary = top_brand_row.index[0] if not top_brand_row.empty else "—"
-
-            leader_model_summary, leader_model_growth = None, None
-            if not df_prev.empty:
-                curr_m = df_kpi_curr.groupby("Label")[metric_overview].sum()
-                prev_m = df_prev.groupby("Label")[metric_overview].sum()
-                cmp_m = pd.DataFrame({"Curr": curr_m, "Prev": prev_m}).fillna(0)
-                cmp_m = cmp_m[(cmp_m["Curr"] >= 30) & (cmp_m["Prev"] >= 10)]
-                if not cmp_m.empty:
-                    cmp_m["Growth"] = (cmp_m["Curr"] - cmp_m["Prev"]) / cmp_m["Prev"] * 100
-                    cmp_m = cmp_m.sort_values("Growth", ascending=False)
-                    leader_model_summary = cmp_m.index[0]
-                    leader_model_growth = cmp_m.iloc[0]["Growth"]
-
-            growth_phrase = f"расте с {growth_summary:+.1f}%" if growth_summary is not None else "няма данни за сравнение"
-            model_phrase = f" Водещ ръст показва <b>{leader_model_summary}</b> (+{leader_model_growth:.0f}%)." if leader_model_summary else ""
-
-            st.markdown(
-                f'<div style="background:linear-gradient(135deg, rgba(15,82,87,0.06), rgba(20,184,166,0.03)); '
-                f'border-left:4px solid {TAB_ACCENT_OVERVIEW}; border-radius:10px; padding:14px 18px; '
-                f'margin-bottom:1.1rem; font-size:0.95rem; color:#334155; line-height:1.5;">'
-                f'📊 Пазарът в категорията <b>{selected_cat}</b> за {period_label_full} {growth_phrase} спрямо {prev_period_label or "предходния период"}, '
-                f'воден от <b>{leader_brand_summary}</b> като лидер по обем.{model_phrase}'
-                f'</div>', unsafe_allow_html=True
-            )
-
         # 1. РАДАР ЗА РАСТЕЖ И ПЕЧЕЛИВШИ / ГУБЕЩИ (2 СИМЕТРИЧНИ КОЛОНИ)
         col_ov1, col_ov2 = st.columns(2)
 
@@ -695,20 +655,19 @@ with tab_overview:
         # 2.1. HEATMAP: ГОДИНИ x МЕСЕЦИ
         with col_hm1:
             if not df_full.empty:
-                pivot_yr_m = df_full.groupby(["Година", "Месец"])[metric_overview].sum().unstack(level=1)
+                pivot_yr_m = df_full.groupby(["Година", "Месец"])[metric_overview].sum().unstack(level=1).fillna(0)
                 pivot_yr_m.columns = [month_names_dict.get(m, m) for m in pivot_yr_m.columns]
-                text_matrix_hm1 = pivot_yr_m.map(lambda v: "н/д" if pd.isna(v) else fmt_num(v))
-
+                
                 fig_hm1 = px.imshow(
                     pivot_yr_m,
                     labels=dict(x="Месец", y="Година", color="Обем"),
                     x=pivot_yr_m.columns,
                     y=[str(y) for y in pivot_yr_m.index],
-                    color_continuous_scale=BRAND_HEATMAP_SCALE,
+                    color_continuous_scale="Tealgrn",
+                    text_auto=".0f",
                     aspect="auto",
                     title=f"СЕЗОННА ТОПЛИННА КАРТА ПО ГОДИНИ ({metric_overview.upper()})"
                 )
-                fig_hm1.update_traces(text=text_matrix_hm1.values, texttemplate="%{text}")
                 fig_hm1.update_layout(
                     title=dict(font=TITLE_FONT),
                     height=380,
@@ -716,7 +675,7 @@ with tab_overview:
                     font=CHART_FONT,
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
-                    coloraxis_showscale=False
+                    coloraxis_showscale=False # Премахване на страничната скала/слайдър
                 )
                 fig_hm1.update_xaxes(fixedrange=True)
                 fig_hm1.update_yaxes(fixedrange=True, type='category')
@@ -737,7 +696,7 @@ with tab_overview:
                     labels=dict(x="Месец", y="Марка", color="Обем"),
                     x=pivot_b_m.columns,
                     y=pivot_b_m.index,
-                    color_continuous_scale = BRAND_HEATMAP_SCALE,
+                    color_continuous_scale="Viridis",
                     text_auto=".0f",
                     aspect="auto",
                     title=f"МЕСЕЧНА ИНТЕНЗИВНОСТ НА ТОП 12 МАРКИ ПРЕЗ {period_label_full}"
