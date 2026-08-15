@@ -1061,8 +1061,8 @@ with tab_new:
         render_multi_year_yoy_chart(df_working, "Нови", "Сравнение на тренда при Нови МПС по години", "yoy_new", primary_color=accent_new)
 
         col_m1, col_m2 = st.columns([1, 1])
-    with col_m1:
-    render_brand_leaderboard(brand_totals_new, "ТОП 15 МАРКИ", accent_new, key="leaderboard_new")
+        with col_m1:
+            render_brand_leaderboard(brand_totals_new, "ТОП 15 МАРКИ", accent_new, key="leaderboard_new")
 
         top_models_new = df_new_agg.sort_values("Нови", ascending=False).head(15).copy()
         top_models_new["Име"] = (top_models_new["Brand"] + " " + top_models_new["Model"]).astype(str)
@@ -1109,8 +1109,8 @@ with tab_used:
         render_multi_year_yoy_chart(df_working, "Вторичен Пазар", "Сравнение на тренда при Вторичен пазар по години", "yoy_used", primary_color=accent_used)
 
         col_u1, col_u2 = st.columns([1, 1])
-    with col_u1:
-    render_brand_leaderboard(brand_totals_used, "ТОП 15 МАРКИ", accent_used, key="leaderboard_used")
+        with col_u1:
+            render_brand_leaderboard(brand_totals_used, "ТОП 15 МАРКИ", accent_used, key="leaderboard_used")
 
         top_models_used = df_used_agg.sort_values("Вторичен Пазар", ascending=False).head(15).copy()
         top_models_used["Име"] = (top_models_used["Brand"] + " " + top_models_used["Model"]).astype(str)
