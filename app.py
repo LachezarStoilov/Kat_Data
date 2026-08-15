@@ -344,6 +344,63 @@ def render_kpi_growth(col, label, current_total, prev_total, accent, prev_label=
 def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f5257"):
     if df_input.empty:
         st.info("Няма налични данни за избрания филтър.")
+
+def render_brand_leaderboard(brand_totals, title, accent_color, key, top_n=15):
+    """
+    Модерна 'lollipop' диаграма за топ марки — заменя px.bar с continuous color scale.
+    brand_totals: pd.Series, индексиран по Brand, вече сумиран и сортиран низходящо.
+    """
+    data = brand_totals.head(top_n).sort_values(ascending=True)
+    if data.empty:
+        st.info("Няма данни за визуализация.")
+        return None
+
+    total = brand_totals.sum()
+    ranks_desc = list(range(len(data), 0, -1))
+
+    def rank_color(rank):
+        if rank == 1: return accent_color
+        if rank <= 3: return hex_to_rgba(accent_color, 0.72)
+        return hex_to_rgba(accent_color, 0.30)
+
+    dot_colors = [rank_color(r) for r in ranks_desc]
+    text_colors = ["#ffffff" if r <= 3 else "#334155" for r in ranks_desc]
+    dot_sizes = [30 if r == 1 else 24 if r <= 3 else 16 for r in ranks_desc]
+    shares = (data / total * 100) if total > 0 else data * 0
+    max_val = data.values.max()
+    offset = max_val * 0.05
+
+    fig = go.Figure()
+    for brand, val, color in zip(data.index, data.values, dot_colors):
+        fig.add_shape(type="line", x0=0, x1=val, y0=brand, y1=brand, line=dict(color=color, width=2))
+
+    fig.add_trace(go.Scatter(
+        x=data.values, y=data.index, mode="markers+text",
+        marker=dict(size=dot_sizes, color=dot_colors, line=dict(width=2, color="#ffffff")),
+        text=[str(r) for r in ranks_desc],
+        textfont=dict(size=10, family="JetBrains Mono, monospace", color=text_colors),
+        customdata=list(zip(data.values, shares)),
+        hovertemplate="<b>%{y}</b><br>%{customdata[0]:,.0f} бр. · %{customdata[1]:.1f}% дял<extra></extra>",
+        showlegend=False
+    ))
+    fig.add_trace(go.Scatter(
+        x=data.values + offset, y=data.index, mode="text",
+        text=[fmt_num(v) for v in data.values], textposition="middle right",
+        textfont=dict(size=12, family="JetBrains Mono, monospace", color="#334155"),
+        hoverinfo="skip", showlegend=False
+    ))
+
+    fig.update_layout(
+        title=dict(text=title.upper(), font=TITLE_FONT),
+        height=450, margin=dict(t=55, l=10, r=90, b=10),
+        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+        font=CHART_FONT, dragmode=False,
+        hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c"))
+    )
+    fig.update_xaxes(fixedrange=True, visible=False, range=[0, max_val * 1.3])
+    fig.update_yaxes(fixedrange=True, type="category", showgrid=False)
+
+    st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key, width="stretch")
         return
 
     agg_df = df_input.groupby(["Година", "Месец"])[metric].sum().reset_index()
@@ -1004,11 +1061,8 @@ with tab_new:
         render_multi_year_yoy_chart(df_working, "Нови", "Сравнение на тренда при Нови МПС по години", "yoy_new", primary_color=accent_new)
 
         col_m1, col_m2 = st.columns([1, 1])
-        top_brands_new = brand_totals_new.reset_index().head(15)
-        fig_b_new = px.bar(top_brands_new.sort_values("Нови"), x="Нови", y="Brand", orientation="h", title="ТОП 15 МАРКИ", text="Нови", color="Нови", color_continuous_scale=amber_gradient)
-        fig_b_new.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False, font=CHART_FONT, title_font=TITLE_FONT)
-        fig_b_new = apply_plotly_mobile_lock(fig_b_new)
-        col_m1.plotly_chart(fig_b_new, config=PLOTLY_CONFIG, width="stretch")
+with col_m1:
+    render_brand_leaderboard(brand_totals_new, "ТОП 15 МАРКИ", accent_new, key="leaderboard_new")
 
         top_models_new = df_new_agg.sort_values("Нови", ascending=False).head(15).copy()
         top_models_new["Име"] = (top_models_new["Brand"] + " " + top_models_new["Model"]).astype(str)
@@ -1055,11 +1109,8 @@ with tab_used:
         render_multi_year_yoy_chart(df_working, "Вторичен Пазар", "Сравнение на тренда при Вторичен пазар по години", "yoy_used", primary_color=accent_used)
 
         col_u1, col_u2 = st.columns([1, 1])
-        top_brands_used = brand_totals_used.reset_index().head(15)
-        fig_b_used = px.bar(top_brands_used.sort_values("Вторичен Пазар"), x="Вторичен Пазар", y="Brand", orientation="h", title="ТОП 15 МАРКИ", text="Вторичен Пазар", color="Вторичен Пазар", color_continuous_scale=steel_gradient)
-        fig_b_used.update_layout(height=450, plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=10, r=10), coloraxis_showscale=False, font=CHART_FONT, title_font=TITLE_FONT)
-        fig_b_used = apply_plotly_mobile_lock(fig_b_used)
-        col_u1.plotly_chart(fig_b_used, config=PLOTLY_CONFIG, width="stretch")
+with col_u1:
+    render_brand_leaderboard(brand_totals_used, "ТОП 15 МАРКИ", accent_used, key="leaderboard_used")
 
         top_models_used = df_used_agg.sort_values("Вторичен Пазар", ascending=False).head(15).copy()
         top_models_used["Име"] = (top_models_used["Brand"] + " " + top_models_used["Model"]).astype(str)
