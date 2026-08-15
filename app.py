@@ -401,7 +401,7 @@ def render_brand_leaderboard(brand_totals, title, accent_color, key, top_n=15):
     fig.update_yaxes(fixedrange=True, type="category", showgrid=False)
 
     st.plotly_chart(fig, config=PLOTLY_CONFIG, key=key, width="stretch")
-        return fig
+    return fig
 
     agg_df = df_input.groupby(["Година", "Месец"])[metric].sum().reset_index()
     month_names = {1:"Яну", 2:"Фев", 3:"Мар", 4:"Апр", 5:"Май", 6:"Юни", 7:"Юли", 8:"Авг", 9:"Сеп", 10:"Окт", 11:"Ное", 12:"Дек"}
