@@ -697,7 +697,7 @@ with tab_overview:
             if not df_full.empty:
                 pivot_yr_m = df_full.groupby(["Година", "Месец"])[metric_overview].sum().unstack(level=1)
                 pivot_yr_m.columns = [month_names_dict.get(m, m) for m in pivot_yr_m.columns]
-                    text_matrix_hm1 = pivot_yr_m.map(lambda v: "н/д" if pd.isna(v) else fmt_num(v))
+                text_matrix_hm1 = pivot_yr_m.map(lambda v: "н/д" if pd.isna(v) else fmt_num(v))
 
                 fig_hm1 = px.imshow(
                     pivot_yr_m,
