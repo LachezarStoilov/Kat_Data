@@ -24,7 +24,7 @@ GAIN_COLOR = "#0D9488"            # Teal 600 — вместо стандартн
 LOSS_COLOR = "#B5534A"            # Приглушено тухлено червено — вместо наситеното #DC2626
 
 # Серийна палитра за пай-чартове / сравнителни линии — цветна, но в тийл гама
-SERIES_PALETTE = ["#0F766E", "#0D9488", "#0891B2", "#65A30D", "#D97706", "#2DD4BF", "#64748B"]
+SERIES_PALETTE = = ["#0F766E", "#D97706", "#2563EB", "#7C3AED", "#DB2777", "#65A30D", "#64748B"]
 
 # Plotly typography — clean SaaS hierarchy
 CHART_FONT = dict(
@@ -982,7 +982,7 @@ with tab_overview:
 
                     max_g = top_momentum["Growth_Pct"].max()
                     fig_mom.update_layout(
-                        title=title_cfg("МОМЕНТУМ ЛИДЕРИ · ТОП 15 МОДЕЛА (МИН. 30 БР.)"),
+                        title=title_cfg("ТОП 15 МОДЕЛА ЗА ПЕРИОДА (МИН. 30 БР.)"),
                         height=580,
                         margin=dict(t=50, l=10, r=80, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
