@@ -1002,36 +1002,40 @@ with tab_overview:
                 tot_curr = df_kpi_curr[metric_overview].sum()
                 tot_prev = df_prev[metric_overview].sum()
 
-                if tot_curr > 0 and tot_prev > 0:
-                    curr_b_share = (df_kpi_curr.groupby("Brand")[metric_overview].sum() / tot_curr) * 100
-                    prev_b_share = (df_prev.groupby("Brand")[metric_overview].sum() / tot_prev) * 100
+              if tot_curr > 0 and tot_prev > 0:
+    curr_b_share = (df_kpi_curr.groupby("Brand")[metric_overview].sum() / tot_curr) * 100
+    prev_b_share = (df_prev.groupby("Brand")[metric_overview].sum() / tot_prev) * 100
 
-                    delta_df = pd.DataFrame({"Share_Curr": curr_b_share, "Share_Prev": prev_b_share}).fillna(0)
-                    delta_df["Delta_PP"] = delta_df["Share_Curr"] - delta_df["Share_Prev"]
+    # 1. Изчисляваме разликата
+    delta_df = pd.DataFrame({"Share_Curr": curr_b_share, "Share_Prev": prev_b_share}).fillna(0)
+    delta_df["Delta_PP"] = delta_df["Share_Curr"] - delta_df["Share_Prev"]
 
-                    sig_df = delta_df[(delta_df["Share_Curr"] >= 0.2) | (delta_df["Share_Prev"] >= 0.2)].sort_values("Delta_PP", ascending=True)
+    # 2. ЗАКРЪГЛЯМЕ ВЕДНАГА ТУК (преди филтрирането и concat):
+    delta_df["Delta_PP"] = delta_df["Delta_PP"].round(2)
+    delta_df["Share_Curr"] = delta_df["Share_Curr"].round(2)
+    delta_df["Share_Prev"] = delta_df["Share_Prev"].round(2)
 
-                    top_losers = sig_df.head(15)
-                    top_gainers = sig_df.tail(15)
-                    div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
+    # 3. Филтрираме и правим div_df
+    sig_df = delta_df[(delta_df["Share_Curr"] >= 0.2) | (delta_df["Share_Prev"] >= 0.2)].sort_values("Delta_PP", ascending=True)
 
-                    colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
-                    labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
-                    delta_df["Delta_PP"] = delta_df["Delta_PP"].round(2)
-                    delta_df["Share_Curr"] = delta_df["Share_Curr"].round(2)
-                    delta_df["Share_Prev"] = delta_df["Share_Prev"].round(2)
+    top_losers = sig_df.head(15)
+    top_gainers = sig_df.tail(15)
+    div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
 
-                    fig_div = go.Figure(go.Bar(
-                        x=div_df["Delta_PP"],
-                        y=div_df.index,
-                        orientation="h",
-                        text=labels_div,
-                        textposition="outside",
-                        marker=dict(color=colors_div, line=dict(width=0), cornerradius=5),
-                        hovertemplate="<b>%{y}</b><br>Промяна дял: %{x:+.2f}%<br>Текущ дял: %{customdata[0]:.2f}%<br>Предходен дял: %{customdata[1]:.2f}%<extra></extra>",
-                        customdata=div_df[["Share_Curr", "Share_Prev"]]
-                    ))
+    # 4. Генерираме цветовете и етикетите СЛЕД закръглянето
+    colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
+    labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
 
+    fig_div = go.Figure(go.Bar(
+        x=div_df["Delta_PP"],
+        y=div_df.index,
+        orientation="h",
+        text=labels_div,
+        textposition="outside",
+        marker=dict(color=colors_div, line=dict(width=0), cornerradius=5),
+        hovertemplate="<b>%{y}</b><br>Промяна дял: %{x:+.2f}%<br>Текущ дял: %{customdata[0]:.2f}%<br>Предходен дял: %{customdata[1]:.2f}%<extra></extra>",
+        customdata=div_df[["Share_Curr", "Share_Prev"]]
+    ))
                     max_val_abs = max(abs(div_df["Delta_PP"].min()), abs(div_df["Delta_PP"].max()))
                     x_bound = max(1.2, max_val_abs * 1.15)
 
