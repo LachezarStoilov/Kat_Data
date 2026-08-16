@@ -1017,6 +1017,9 @@ with tab_overview:
 
                     colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
                     labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
+                    delta_df["Delta_PP"] = delta_df["Delta_PP"].round(2)
+                    delta_df["Share_Curr"] = delta_df["Share_Curr"].round(2)
+                    delta_df["Share_Prev"] = delta_df["Share_Prev"].round(2)
 
                     fig_div = go.Figure(go.Bar(
                         x=div_df["Delta_PP"],
