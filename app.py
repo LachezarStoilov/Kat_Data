@@ -11,253 +11,606 @@ import os
 st.set_page_config(page_title="AUTO MOTO SALES BG", page_icon="📊", layout="wide")
 
 # ----------------------------------------------------------------------------------
-# ДИЗАЙН ТОКЕНИ (цвят / типография)
+# DESIGN SYSTEM — PREMIUM SAAS / BI
 # ----------------------------------------------------------------------------------
-TAB_ACCENT_OVERVIEW = "#0f5257" # тийл - раздел ОБЗОР
-TAB_ACCENT_BRAND = "#0f5257"    # тъмен петрол-тийл - раздел МАРКИ
-TAB_ACCENT_MODEL = "#334155"    # неутрален графит - раздел МОДЕЛИ
-TAB_ACCENT_NEW = "#b45309"      # кехлибар/ръжда - раздел НОВИ
-TAB_ACCENT_USED = "#2563a6"     # стоманено синьо - раздел ВТОРИЧЕН ПАЗАР
+TAB_ACCENT_OVERVIEW = "#0F766E"   # Teal 700
+TAB_ACCENT_BRAND = "#0F766E"
+TAB_ACCENT_MODEL = "#475569"      # Slate 600
+TAB_ACCENT_NEW = "#D97706"        # Amber 600
+TAB_ACCENT_USED = "#2563EB"       # Blue 600
 
-CHART_FONT = dict(family="Manrope, sans-serif", size=12, color="#14181f")
-TITLE_FONT = dict(family="Oswald, sans-serif", size=15, color="#14181f")
+# Plotly typography — clean SaaS hierarchy
+CHART_FONT = dict(
+    family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    size=12,
+    color="#334155"
+)
+TITLE_FONT = dict(
+    family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    size=14,
+    color="#0F172A"
+)
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+/* ==========================================================================
+   AUTO MOTO SALES BG — PREMIUM BI DESIGN SYSTEM
+   Visual direction: Stripe / Linear / Vercel inspired, but adapted to
+   Streamlit and mobile. No hard shadows, no oversized typography.
+   ========================================================================== */
 
 :root {
     color-scheme: light;
-    --ink: #10141c;
-    --panel: #101a23;
-    --panel-2: #16232e;
-    --slate: #64748b;
-    --border: #e7eaf0;
-    --surface: #ffffff;
-    --app-bg: #f5f6f8;
-    --brand: #0f5257;
-    --brand-glow: #14b8a6;
-    --amber: #b45309;
-    --steel: #2563a6;
+
+    --bg: #F6F8FB;
+    --surface: #FFFFFF;
+    --surface-soft: #F8FAFC;
+    --surface-muted: #F1F5F9;
+
+    --ink: #0F172A;
+    --ink-2: #1E293B;
+    --muted: #64748B;
+    --muted-2: #94A3B8;
+
+    --border: #E2E8F0;
+    --border-soft: #EDF2F7;
+
+    --teal: #0F766E;
+    --teal-bright: #14B8A6;
+    --blue: #2563EB;
+    --amber: #D97706;
+    --purple: #7C3AED;
     --success: #059669;
-    --danger: #b91c1c;
-    --muted: #94a3b8;
+    --danger: #DC2626;
 
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
-    --radius-xl: 22px;
+    --radius-xl: 20px;
 
-    --shadow-sm: 0 1px 2px rgba(16,24,40,0.05);
-    --shadow-md: 0 8px 20px -6px rgba(16,24,40,0.12), 0 2px 6px -2px rgba(16,24,40,0.06);
-    --shadow-lg: 0 20px 40px -12px rgba(16,24,40,0.22);
+    --shadow-card:
+        0 1px 2px rgba(15, 23, 42, 0.03),
+        0 8px 24px rgba(15, 23, 42, 0.035);
+
+    --shadow-hover:
+        0 2px 4px rgba(15, 23, 42, 0.04),
+        0 14px 32px rgba(15, 23, 42, 0.08);
 }
 
-html, body, [class*="css"] { font-family: 'Manrope', sans-serif; background-color: var(--app-bg); color: var(--ink); }
+/* ---------- GLOBAL ---------- */
 
-*:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+html, body, [class*="css"] {
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+                 BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+}
 
-/* HERO / DASHBOARD PANEL */
+[data-testid="stAppViewContainer"] {
+    background:
+        radial-gradient(900px 500px at 85% -10%, rgba(20,184,166,.055), transparent 65%),
+        var(--bg);
+}
+
+[data-testid="stMainBlockContainer"] {
+    max-width: 1500px;
+    padding-top: 1.25rem;
+    padding-bottom: 3rem;
+}
+
+*:focus-visible {
+    outline: 2px solid rgba(15,118,110,.55);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* ---------- HERO ---------- */
+
 .hero-container {
     background:
-        radial-gradient(120% 160% at 100% 0%, rgba(20,184,166,0.22) 0%, rgba(16,26,35,0) 55%),
-        linear-gradient(135deg, #101a23 0%, #16232e 60%, #16232e 100%);
+        radial-gradient(90% 180% at 100% 0%, rgba(20,184,166,.17), transparent 48%),
+        linear-gradient(135deg, #0B1220 0%, #111C2D 100%);
+    border: 1px solid rgba(255,255,255,.07);
     border-radius: var(--radius-xl);
-    padding: 1.85rem 2.4rem;
-    margin-bottom: 1.2rem;
+    padding: 1.35rem 1.55rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
+    box-shadow:
+        0 1px 2px rgba(15,23,42,.08),
+        0 12px 32px rgba(15,23,42,.10);
 }
+
+.hero-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.025) 50%, transparent 100%);
+    pointer-events: none;
+}
+
 .hero-container::after {
     content: "";
-    position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
-    background: linear-gradient(90deg, var(--amber), var(--brand-glow));
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #D97706 0%, #14B8A6 55%, #2563EB 100%);
+    opacity: .9;
 }
-.hero-left { display: flex; align-items: center; gap: 20px; }
+
+.hero-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
 .hero-logo-box {
-    background: rgba(180, 83, 9, 0.15);
-    color: var(--amber);
-    border: 1px solid rgba(180, 83, 9, 0.35);
-    border-radius: 10px;
-    padding: 12px;
-    display: flex; align-items: center; justify-content: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    background: linear-gradient(145deg, rgba(20,184,166,.18), rgba(15,118,110,.08));
+    color: #5EEAD4;
+    border: 1px solid rgba(94,234,212,.20);
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
+.hero-logo-box svg {
+    width: 28px;
+    height: 28px;
+}
+
 .hero-title {
-    font-family: 'Oswald', sans-serif;
-    font-size: 2.1rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.02em; color: #ffffff; margin: 0; line-height: 1.1;
-}
-.hero-sub { font-size: 0.92rem; color: #97a1b0; margin-top: 6px; font-weight: 500; }
-.hero-right { display: flex; gap: 12px; }
-.meta-badge {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px; padding: 10px 16px; text-align: right;
-}
-.meta-label { font-size: 0.68rem; color: #97a1b0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
-.meta-value { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: #f5c992; font-weight: 600; margin-top: 3px; }
-.status-dot {
-    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
-    background: #22c55e; margin-right: 7px; box-shadow: 0 0 6px rgba(34,197,94,.8);
+    font-size: 1.42rem;
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    color: #F8FAFC;
+    margin: 0;
+    line-height: 1.15;
 }
 
-/* KPI CARDS */
-.kpi-card {
-    position: relative; overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.15rem 1.3rem 1.05rem 1.4rem;
-    box-shadow: var(--shadow-sm);
-    height: 100%; min-height: 128px;
-    display: flex; flex-direction: column; justify-content: center;
-    transition: box-shadow .18s ease, transform .18s ease;
-}
-.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.kpi-card::before {
-    content: ""; position: absolute; top: 0; left: 0; bottom: 0; width: 4px;
-    background: var(--tab-accent, var(--brand));
-}
-.kpi-label { font-size: 0.72rem; color: var(--slate); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
-.kpi-value-wrap { margin-top: 0.45rem; }
-.kpi-value { font-family: 'JetBrains Mono', monospace; font-size: 1.65rem; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.kpi-sub { font-size: 0.8rem; font-weight: 600; margin-top: 8px; min-height: 1.2em; }
-
-/* CHART CARD WRAPPER */
-[data-testid="stPlotlyChart"] {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 0.6rem 0.6rem 0.1rem;
-    box-shadow: var(--shadow-sm);
+.hero-sub {
+    font-size: .79rem;
+    color: #94A3B8;
+    margin-top: 5px;
+    font-weight: 500;
 }
 
-/* SECTION TITLES */
-.section-title {
-    font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.02em;
-    font-size: 1.1rem; font-weight: 600; color: var(--ink);
-    margin: 1.2rem 0 0.8rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 0.55rem;
-}
-.section-title::before { content: ""; width: 4px; height: 18px; border-radius: 3px; background: var(--tab-accent, var(--brand)); flex-shrink: 0; }
-
-/* TABS - УГОЛЕМЕНИ И ИЗПЪКВАЩИ ГЛАВНИ ТАБОВЕ */
-div[data-baseweb="tab-list"] {
+.hero-right {
+    display: flex;
     gap: 8px;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 2px;
-    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
 }
-button[role="tab"] {
-    font-family: 'Oswald', sans-serif;
+
+.meta-badge {
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 11px;
+    padding: 8px 11px;
+    min-width: 135px;
+    text-align: left;
+}
+
+.meta-label {
+    font-size: .61rem;
+    color: #64748B;
+    font-weight: 750;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: .075em;
+}
+
+.meta-value {
+    font-size: .72rem;
+    color: #E2E8F0;
+    font-weight: 600;
+    margin-top: 3px;
+    white-space: nowrap;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #34D399;
+    margin-right: 6px;
+    box-shadow: 0 0 0 3px rgba(52,211,153,.10);
+}
+
+/* ---------- KPI CARDS ---------- */
+
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(150px 90px at 100% 0%, var(--kpi-glow, rgba(15,118,110,.055)), transparent 70%),
+        var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.1rem 1rem 1.15rem;
+    box-shadow: var(--shadow-card);
+    min-height: 118px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: #D7E0EA;
+}
+
+.kpi-card::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--tab-accent, var(--teal));
+}
+
+.kpi-card::after {
+    content: "";
+    position: absolute;
+    width: 90px;
+    height: 90px;
+    right: -42px;
+    top: -42px;
+    border-radius: 50%;
+    background: var(--kpi-glow, rgba(15,118,110,.055));
+    pointer-events: none;
+}
+
+.kpi-label {
+    font-size: .65rem;
+    color: var(--muted);
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: .065em;
+    line-height: 1.25;
+}
+
+.kpi-value-wrap {
+    margin-top: .38rem;
+    position: relative;
+    z-index: 1;
+}
+
+.kpi-value {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.55rem;
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -.035em;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-sub {
+    font-size: .72rem;
+    font-weight: 600;
+    margin-top: 7px;
+    min-height: 1.1em;
+    color: var(--muted);
+}
+
+/* ---------- CHART SURFACES ---------- */
+
+[data-testid="stPlotlyChart"] {
+    background: rgba(255,255,255,.86);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: .15rem .2rem .05rem;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+[data-testid="stPlotlyChart"]:hover {
+    border-color: #D8E1EA;
+}
+
+/* ---------- SECTION TITLES ---------- */
+
+.section-title {
+    font-size: .93rem;
+    font-weight: 750;
+    color: var(--ink);
+    letter-spacing: -.01em;
+    margin: 1.15rem 0 .7rem;
+    padding: .2rem 0 .62rem;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+}
+
+.section-title::before {
+    content: "";
+    width: 3px;
+    height: 17px;
+    border-radius: 3px;
+    background: var(--tab-accent, var(--teal));
+    flex-shrink: 0;
+}
+
+/* ---------- TABS ---------- */
+
+div[data-baseweb="tab-list"] {
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    padding: 0 2px 5px;
+    margin: .35rem 0 1rem;
+}
+
+button[role="tab"] {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
     font-weight: 700 !important;
-    font-size: 1.15rem !important;
-    color: var(--slate) !important;
+    font-size: .76rem !important;
+    letter-spacing: .035em;
+    color: var(--muted) !important;
     background: transparent !important;
-    border: none !important;
-    border-bottom: 3px solid transparent !important;
-    padding: 10px 18px !important;
-    margin-right: 12px !important;
-    border-radius: 8px 8px 0 0 !important;
-    transition: all .18s ease;
+    border: 1px solid transparent !important;
+    border-radius: 9px !important;
+    padding: 8px 13px !important;
+    margin: 0 !important;
+    transition: background .16s ease, color .16s ease, border-color .16s ease;
 }
+
 button[role="tab"][aria-selected="true"] {
-    color: var(--brand) !important;
-    border-bottom: 3px solid var(--amber) !important;
-    background: rgba(15, 82, 87, 0.05) !important;
+    color: var(--teal) !important;
+    background: rgba(15,118,110,.07) !important;
+    border-color: rgba(15,118,110,.12) !important;
+    box-shadow: none !important;
 }
+
 button[role="tab"]:hover {
     color: var(--ink) !important;
-    background: rgba(15, 82, 87, 0.08) !important;
+    background: var(--surface-muted) !important;
 }
 
-/* PILLS */
+/* ---------- PILLS / FILTERS ---------- */
+
+[data-testid="stPills"] button {
+    border-radius: 9px !important;
+    font-weight: 650 !important;
+    font-size: .76rem !important;
+    min-height: 34px !important;
+}
+
 [data-testid="stPills"] button[aria-pressed="true"],
 [data-testid="stPills"] button[aria-checked="true"] {
-    background: var(--brand) !important;
+    background: var(--teal) !important;
     color: #fff !important;
-    border-color: var(--brand) !important;
+    border-color: var(--teal) !important;
+    box-shadow: 0 2px 7px rgba(15,118,110,.18);
 }
 
-/* MULTISELECT ТАГОВЕ */
-[data-baseweb="tag"] {
-    background-color: rgba(15, 82, 87, 0.10) !important;
-    border: 1px solid rgba(15, 82, 87, 0.35) !important;
-    border-radius: 8px !important;
-    color: #0f5257 !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-weight: 600 !important;
-    padding: 1px 4px !important;
-}
-[data-baseweb="tag"] svg { fill: #0f5257 !important; }
-[data-baseweb="tag"]:hover { background-color: rgba(15, 82, 87, 0.18) !important; }
+/* ---------- INPUTS ---------- */
 
 [data-baseweb="select"] > div {
     border-radius: 10px !important;
     border-color: var(--border) !important;
+    background: var(--surface) !important;
+    min-height: 38px !important;
 }
+
+[data-baseweb="select"] > div:hover {
+    border-color: #CBD5E1 !important;
+}
+
 [data-baseweb="select"] > div:focus-within {
-    border-color: var(--brand) !important;
-    box-shadow: 0 0 0 1px rgba(15,82,87,0.25) !important;
+    border-color: rgba(15,118,110,.65) !important;
+    box-shadow: 0 0 0 3px rgba(15,118,110,.09) !important;
 }
 
-/* DATA TABLES */
-[data-testid="stDataFrame"] { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+[data-baseweb="tag"] {
+    background: rgba(15,118,110,.075) !important;
+    border: 1px solid rgba(15,118,110,.16) !important;
+    border-radius: 7px !important;
+    color: #0F766E !important;
+    font-weight: 650 !important;
+    padding: 1px 4px !important;
+}
 
-/* MOBILE / RESPONSIVE FIX */
+[data-baseweb="tag"] svg {
+    fill: #0F766E !important;
+}
+
+/* ---------- DATAFRAME ---------- */
+
+[data-testid="stDataFrame"] {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-card);
+}
+
+/* ---------- MOBILE ---------- */
+
 @media (max-width: 768px) {
-    [data-testid="stAppViewContainer"] { overflow-x: hidden !important; }
-    [data-testid="stMainBlockContainer"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; max-width: 100% !important; }
-
-    .hero-container { flex-direction: column; text-align: center; padding: 1.25rem 0.85rem; gap: 14px; }
-    .hero-left { flex-direction: column; gap: 10px; }
-    .hero-title { font-size: 1.5rem; line-height: 1.15; }
-    .hero-sub { font-size: 0.82rem; }
-    .hero-right { flex-direction: column; width: 100%; align-items: stretch; text-align: center; gap: 8px; }
-    .meta-badge { text-align: center; padding: 8px 10px; }
-
-    [data-testid="stHorizontalBlock"], div[data-testid="stHorizontalBlock"], .stHorizontalBlock {
-        flex-direction: column !important; flex-wrap: nowrap !important; width: 100% !important; gap: 0.85rem !important; align-items: stretch !important;
-    }
-    [data-testid="stHorizontalBlock"] > [data-testid="column"], [data-testid="stHorizontalBlock"] > div[data-testid="column"], .stHorizontalBlock > div {
-        width: 100% !important; min-width: 100% !important; max-width: 100% !important; flex: 1 1 100% !important;
+    [data-testid="stAppViewContainer"] {
+        overflow-x: hidden !important;
     }
 
-    .kpi-card { width: 100% !important; box-sizing: border-box !important; margin-bottom: 0 !important; min-height: 100px; padding: 1rem; }
-    .kpi-value { font-size: 1.3rem; }
+    [data-testid="stMainBlockContainer"] {
+        padding: .7rem .72rem 2rem !important;
+        max-width: 100% !important;
+    }
+
+    .hero-container {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+        gap: 12px;
+        border-radius: 16px;
+    }
+
+    .hero-left {
+        gap: 11px;
+    }
+
+    .hero-logo-box {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .hero-title {
+        font-size: 1.08rem;
+    }
+
+    .hero-sub {
+        font-size: .72rem;
+        line-height: 1.35;
+    }
+
+    .hero-right {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+    }
+
+    .meta-badge {
+        min-width: 0;
+        padding: 7px 9px;
+    }
+
+    .meta-value {
+        font-size: .64rem;
+        white-space: normal;
+        line-height: 1.3;
+    }
+
+    /* Preserve the existing mobile stacking logic for Streamlit columns.
+       Only reduce spacing; no horizontal overflow is introduced. */
+    [data-testid="stHorizontalBlock"],
+    div[data-testid="stHorizontalBlock"],
+    .stHorizontalBlock {
+        gap: .65rem !important;
+    }
+
+    .kpi-card {
+        min-height: 94px;
+        padding: .85rem .9rem .8rem 1rem;
+        border-radius: 13px;
+    }
+
+    .kpi-value {
+        font-size: 1.22rem;
+    }
+
+    .kpi-label {
+        font-size: .60rem;
+    }
+
+    .kpi-sub {
+        font-size: .67rem;
+        margin-top: 5px;
+    }
 
     div[data-baseweb="tab-list"] {
-        display: flex !important; flex-wrap: nowrap !important;
-        overflow-x: auto !important; overflow-y: hidden !important;
-        width: 100% !important; max-width: 100% !important;
-        gap: 4px !important; padding: 4px 2px 8px 2px !important;
-        scrollbar-width: none !important; -webkit-overflow-scrolling: touch !important;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 3px !important;
+        padding: 3px 1px 7px !important;
+        scrollbar-width: none !important;
+        -webkit-overflow-scrolling: touch !important;
     }
-    div[data-baseweb="tab-list"]::-webkit-scrollbar { display: none !important; }
-    div[data-baseweb="tab-list"] > div { display: flex !important; flex-wrap: nowrap !important; width: max-content !important; min-width: max-content !important; }
 
-    button[role="tab"] { flex: 0 0 auto !important; width: auto !important; min-width: max-content !important; white-space: nowrap !important; padding: 9px 12px !important; margin-right: 10px !important; font-size: 0.95rem !important; line-height: 1.2 !important; }
-    button[role="tab"] p { white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important; margin: 0 !important; }
+    div[data-baseweb="tab-list"]::-webkit-scrollbar {
+        display: none !important;
+    }
 
-    [data-testid="stPills"] { max-width: 100% !important; overflow-x: auto !important; overflow-y: hidden !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    [data-testid="stPills"]::-webkit-scrollbar { display: none; }
+    div[data-baseweb="tab-list"] > div {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        width: max-content !important;
+        min-width: max-content !important;
+    }
 
-    [data-testid="stPlotlyChart"] { max-width: 100% !important; width: 100% !important; overflow: visible !important; }
-    .js-plotly-plot, .plot-container { max-width: 100% !important; width: 100% !important; overflow-x: hidden !important; overflow-y: visible !important; }
-    [data-testid="stDataFrame"] { max-width: 100% !important; overflow-x: auto !important; }
+    button[role="tab"] {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: max-content !important;
+        white-space: nowrap !important;
+        padding: 8px 11px !important;
+        font-size: .70rem !important;
+        line-height: 1.2 !important;
+    }
 
-    .section-title { font-size: 1rem; line-height: 1.35; margin-top: 1rem; }
-    .stMarkdown, .stText, label, p, h1, h2, h3, h4, h5, h6 { max-width: 100%; overflow-wrap: anywhere; }
+    [data-testid="stPills"] {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    [data-testid="stPills"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    [data-testid="stPlotlyChart"] {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .js-plotly-plot,
+    .plot-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+    }
+
+    [data-testid="stDataFrame"] {
+        max-width: 100% !important;
+        overflow-x: auto !important;
+    }
+
+    .section-title {
+        font-size: .84rem;
+        line-height: 1.35;
+        margin-top: .9rem;
+    }
+
+    .stMarkdown, .stText, label, p, h1, h2, h3, h4, h5, h6 {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
 }
-header { visibility: hidden; }
+
+header {
+    visibility: hidden;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -297,17 +650,53 @@ st.markdown(f"""
 # ----------------------------------------------------------------------------------
 # ПОМОЩНИ ФУНКЦИИ И КОНФИГУРАЦИИ ЗА ПЛОТЛИ
 # ----------------------------------------------------------------------------------
-PLOTLY_CONFIG = {'displayModeBar': False, 'scrollZoom': False}
+PLOTLY_CONFIG = {
+    "displayModeBar": "hover",
+    "displaylogo": False,
+    "responsive": True,
+    "scrollZoom": False,
+    "doubleClick": "reset",
+    "showTips": True,
+}
 
 def apply_plotly_mobile_lock(fig):
+    """Shared premium Plotly styling. Hover/legend remain interactive."""
     fig.update_layout(
-        dragmode=False, font=CHART_FONT,
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c"))
+        dragmode=False,
+        font=CHART_FONT,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=dict(
+            bgcolor="#0F172A",
+            bordercolor="#0F172A",
+            font=dict(
+                family="Inter, sans-serif",
+                size=12,
+                color="#F8FAFC"
+            ),
+            align="left"
+        ),
+        transition=dict(duration=250, easing="cubic-in-out"),
     )
-    fig.update_xaxes(fixedrange=True)
-    fig.update_yaxes(fixedrange=True, type='category')
-    fig.update_traces(textfont_size=15, textposition="outside", cliponaxis=False, marker=dict(line=dict(width=0), cornerradius=6))
+    fig.update_xaxes(
+        fixedrange=True,
+        showline=False,
+        zeroline=False,
+        gridcolor="#EEF2F7",
+        tickfont=dict(size=11, color="#64748B")
+    )
+    fig.update_yaxes(
+        fixedrange=True,
+        showline=False,
+        zeroline=False,
+        gridcolor="#EEF2F7",
+        tickfont=dict(size=11, color="#64748B")
+    )
+    fig.update_traces(
+        textfont_size=12,
+        cliponaxis=False,
+        marker=dict(line=dict(width=0))
+    )
     return fig
 
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257"):
@@ -571,7 +960,7 @@ with tab_overview:
                         textposition="outside",
                         marker=dict(
                             color=top_momentum["Growth_Pct"],
-                            colorscale=["#38bdf8", "#0f5257", "#14b8a6"],
+                            colorscale=["#BAE6FD", "#0F766E", "#14B8A6"],
                             line=dict(width=0),
                             cornerradius=6
                         ),
@@ -663,7 +1052,7 @@ with tab_overview:
                     labels=dict(x="Месец", y="Година", color="Обем"),
                     x=pivot_yr_m.columns,
                     y=[str(y) for y in pivot_yr_m.index],
-                    color_continuous_scale="Tealgrn",
+                    color_continuous_scale=["#E6FFFB", "#5EEAD4", "#0F766E"],
                     text_auto=".0f",
                     aspect="auto",
                     title=f"СЕЗОННА ТОПЛИННА КАРТА ПО ГОДИНИ ({metric_overview.upper()})"
@@ -696,7 +1085,7 @@ with tab_overview:
                     labels=dict(x="Месец", y="Марка", color="Обем"),
                     x=pivot_b_m.columns,
                     y=pivot_b_m.index,
-                    color_continuous_scale="Viridis",
+                    color_continuous_scale=["#E2E8F0", "#14B8A6", "#0F766E"],
                     text_auto=".0f",
                     aspect="auto",
                     title=f"МЕСЕЧНА ИНТЕНЗИВНОСТ НА ТОП 12 МАРКИ ПРЕЗ {period_label_full}"
