@@ -19,6 +19,13 @@ TAB_ACCENT_MODEL = "#475569"      # Slate 600
 TAB_ACCENT_NEW = "#D97706"        # Amber 600
 TAB_ACCENT_USED = "#2563EB"       # Blue 600
 
+# Диъргинг чарт (печеливши/губещи) — тонирано да пасва на тийл палитрата
+GAIN_COLOR = "#0D9488"            # Teal 600 — вместо стандартното наситено зелено
+LOSS_COLOR = "#B5534A"            # Приглушено тухлено червено — вместо наситеното #DC2626
+
+# Серийна палитра за пай-чартове / сравнителни линии — цветна, но в тийл гама
+SERIES_PALETTE = ["#0F766E", "#0D9488", "#0891B2", "#65A30D", "#D97706", "#2DD4BF", "#64748B"]
+
 # Plotly typography — clean SaaS hierarchy
 CHART_FONT = dict(
     family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -699,6 +706,11 @@ def apply_plotly_mobile_lock(fig):
     )
     return fig
 
+def title_cfg(text):
+    """Стандартна стилизация на заглавие + дясно поле, за да не се застъпва
+    текстът с иконките на toolbar-а (камера/fullscreen) при дълги заглавия."""
+    return dict(text=text, font=TITLE_FONT, pad=dict(r=64, t=4))
+
 def kpi_card(col, label, value, sub=None, sub_color="#64748b", accent="#0f5257"):
     sub_html = f'<div class="kpi-sub" style="color:{sub_color};">{sub}</div>' if sub else '<div class="kpi-sub">&nbsp;</div>'
     col.markdown(
@@ -768,7 +780,7 @@ def render_multi_year_yoy_chart(df_input, metric, title, key, primary_color="#0f
         ))
 
     fig.update_layout(
-        title=dict(text=title.upper(), font=TITLE_FONT),
+        title=title_cfg(title.upper()),
         template="plotly_white", height=380, dragmode=False, font=CHART_FONT,
         hovermode="x unified", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
@@ -922,7 +934,7 @@ tab_overview, tab_brand, tab_model, tab_new, tab_used = st.tabs([
 # ТАБ 1: ОБЗОР (ЕКЗЕКУТИВ ПАНЕЛ)
 # ====================================================================================
 with tab_overview:
-    st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_OVERVIEW}">Стратегически анализ върху пазара ({period_label_full})</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="section-title" style="--tab-accent:{TAB_ACCENT_OVERVIEW}">Стратегически анализ върху пазара</div>', unsafe_allow_html=True)
     
     col_ov_m, _ = st.columns([1, 1])
     # DEFAULT ПО ПОДРАЗБИРАНЕ -> "Нови"
@@ -970,7 +982,7 @@ with tab_overview:
 
                     max_g = top_momentum["Growth_Pct"].max()
                     fig_mom.update_layout(
-                        title=dict(text="РАДАР ЗА РАСТЕЖ: ТОП 15 МОДЕЛИ (МИН. 30 БР.)", font=TITLE_FONT),
+                        title=title_cfg("МОМЕНТУМ ЛИДЕРИ · ТОП 15 МОДЕЛА (МИН. 30 БР.)"),
                         height=580,
                         margin=dict(t=50, l=10, r=80, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -982,7 +994,7 @@ with tab_overview:
                     fig_mom = apply_plotly_mobile_lock(fig_mom)
                     st.plotly_chart(fig_mom, config=PLOTLY_CONFIG, width="stretch")
                 else:
-                    st.info("Няма предостатъчно обем за изчисление на 'Радар за растеж'.")
+                    st.info("Няма предостатъчно обем за изчисление на 'Моментум Лидери'.")
 
         # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15)
         with col_ov2:
@@ -1003,7 +1015,7 @@ with tab_overview:
                     top_gainers = sig_df.tail(15)
                     div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
 
-                    colors_div = ["#059669" if d >= 0 else "#dc2626" for d in div_df["Delta_PP"]]
+                    colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
                     labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
 
                     fig_div = go.Figure(go.Bar(
@@ -1021,7 +1033,7 @@ with tab_overview:
                     x_bound = max(1.2, max_val_abs * 1.15)
 
                     fig_div.update_layout(
-                        title=dict(text="ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДЯЛ (ТОП 15)", font=TITLE_FONT),
+                        title=title_cfg("ПЕЧЕЛИВШИ И ГУБЕЩИ ПАЗАРЕН ДЯЛ (ТОП 15)"),
                         height=580,
                         margin=dict(t=50, l=10, r=65, b=10),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -1054,13 +1066,15 @@ with tab_overview:
                     y=[str(y) for y in pivot_yr_m.index],
                     color_continuous_scale=["#E6FFFB", "#5EEAD4", "#0F766E"],
                     text_auto=".0f",
-                    aspect="auto",
-                    title=f"СЕЗОННА ТОПЛИННА КАРТА ПО ГОДИНИ ({metric_overview.upper()})"
+                    aspect="auto"
                 )
                 fig_hm1.update_layout(
-                    title=dict(font=TITLE_FONT),
+                    title=title_cfg(
+                        f"СЕЗОННА ТОПЛИННА КАРТА ПО ГОДИНИ"
+                        f"<br><span style='font-size:11px;color:#94a3b8;font-weight:500'>{metric_overview.upper()}</span>"
+                    ),
                     height=380,
-                    margin=dict(t=50, l=10, r=10, b=10),
+                    margin=dict(t=76, l=10, r=10, b=10),
                     font=CHART_FONT,
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
@@ -1087,13 +1101,15 @@ with tab_overview:
                     y=pivot_b_m.index,
                     color_continuous_scale=["#E2E8F0", "#14B8A6", "#0F766E"],
                     text_auto=".0f",
-                    aspect="auto",
-                    title=f"МЕСЕЧНА ИНТЕНЗИВНОСТ НА ТОП 12 МАРКИ ПРЕЗ {period_label_full}"
+                    aspect="auto"
                 )
                 fig_hm2.update_layout(
-                    title=dict(font=TITLE_FONT),
+                    title=title_cfg(
+                        f"МЕСЕЧНА ИНТЕНЗИВНОСТ ПО МАРКИ"
+                        f"<br><span style='font-size:11px;color:#94a3b8;font-weight:500'>ТОП 12 · {period_label_full}</span>"
+                    ),
                     height=380,
-                    margin=dict(t=50, l=110, r=10, b=10), # Фиксиран ляв марж за марките
+                    margin=dict(t=76, l=110, r=10, b=10), # Фиксиран ляв марж за марките
                     font=CHART_FONT,
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
@@ -1134,7 +1150,7 @@ with tab_overview:
                 ))
 
             fig_cum.update_layout(
-                title=dict(text=f"КУМУЛАТИВНА YTD ТРАЕКТОРИЯ ПО ГОДИНИ ({metric_overview.upper()})", font=TITLE_FONT),
+                title=title_cfg(f"КУМУЛАТИВНА YTD ТРАЕКТОРИЯ ПО ГОДИНИ ({metric_overview.upper()})"),
                 template="plotly_white", height=380, dragmode=False, font=CHART_FONT,
                 hovermode="x unified", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
                 hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
@@ -1211,7 +1227,7 @@ with tab_brand:
             hovertemplate="<b>%{y}</b><br>%{x:,.0f} бр.<extra></extra>".replace(",", " ")
         ))
         fig_b_models.update_layout(
-            title=dict(text=f"ТОП {n_models} МОДЕЛА ({metric_brand.upper()})", font=TITLE_FONT),
+            title=title_cfg(f"ТОП {n_models} МОДЕЛА ({metric_brand.upper()})"),
             height=max(420, n_models * 27),
             margin=dict(t=55, l=10, r=30, b=10),
             showlegend=False
@@ -1258,7 +1274,7 @@ with tab_model:
     st.markdown("<br>", unsafe_allow_html=True)
     metric_tab1 = st.pills("3. Изследвана метрика:", options=["Нови", "Употребявани", "Пререгистрации", "Всички"], default="Нови", key="pill_model")
 
-    MODEL_COLORS = ["#0f5257", "#b45309", "#2563a6", "#7c3aed", "#be185d", "#0d9488", "#64748b"]
+    MODEL_COLORS = SERIES_PALETTE
 
     if sel_models and metric_tab1:
         m_data = df_working[df_working["Label"].isin(sel_models)].sort_values("Sort_Index")
@@ -1283,21 +1299,41 @@ with tab_model:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
+        # Пълен, хронологично подреден списък от периоди за селекцията —
+        # гарантира, че всички линии споделят една и съща категорийна ос
+        # (това беше причината графиката да изглежда "разцепена": моделите
+        # с пропуснат месец получаваха различен ред на категориите).
+        period_order = (
+            df_working[["Sort_Index", "Период"]]
+            .drop_duplicates()
+            .sort_values("Sort_Index")["Период"]
+            .tolist()
+        )
+
         fig = go.Figure()
         max_val = 0
 
         for i, model in enumerate(sel_models):
-            model_df = m_data[m_data["Label"] == model]
-            if model_df.empty:
+            model_df = (
+                m_data[m_data["Label"] == model]
+                .drop_duplicates(subset="Период")
+                .set_index("Период")
+                .reindex(period_order)
+            )
+            model_df[metric_tab1] = model_df[metric_tab1].fillna(0)
+            if model_df[metric_tab1].sum() == 0:
                 continue
             color = MODEL_COLORS[i % len(MODEL_COLORS)]
             max_val = max(max_val, model_df[metric_tab1].max())
             short_name = model.split(" ", 1)[-1]
+            is_leader = (i == 0)
 
             fig.add_trace(go.Scatter(
-                x=model_df["Период"], y=model_df[metric_tab1], name=short_name, mode="lines+markers",
-                line=dict(width=2.75, shape="spline", color=color),
-                marker=dict(size=6, color=color),
+                x=period_order, y=model_df[metric_tab1], name=short_name, mode="lines+markers",
+                line=dict(width=3 if is_leader else 2.25, shape="spline", color=color),
+                marker=dict(size=7 if is_leader else 5, color=color, line=dict(width=1.5, color="#ffffff")),
+                fill="tozeroy" if is_leader else None,
+                fillcolor=hex_to_rgba(color, 0.10) if is_leader else None,
                 customdata=[model] * len(model_df),
                 hovertemplate="<b>%{customdata}</b><br>%{y:,.0f} бр.<extra></extra>".replace(",", " ")
             ))
@@ -1307,14 +1343,15 @@ with tab_model:
         bottom_margin = 45 + (legend_rows * 24)
 
         fig.update_layout(
-            template="plotly_white", height=360 + (legend_rows * 24), font=CHART_FONT, hovermode="x unified",
+            title=title_cfg(f"ДИНАМИКА НА ПРОДАЖБИТЕ ПО МОДЕЛИ ({metric_tab1.upper()})"),
+            template="plotly_white", height=400 + (legend_rows * 24), font=CHART_FONT, hovermode="x unified",
             paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Manrope, sans-serif", size=12, color="#10141c")),
-            legend=dict(orientation="h", y=-0.22, x=0.5, xanchor="center", font=dict(size=11)),
-            margin=dict(t=20, l=10, r=15, b=bottom_margin), dragmode=False
+            hoverlabel=dict(bgcolor="#ffffff", bordercolor="#e7eaf0", font=dict(family="Inter, sans-serif", size=12, color="#0F172A")),
+            legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center", font=dict(size=11)),
+            margin=dict(t=56, l=10, r=15, b=bottom_margin), dragmode=False
         )
-        fig.update_xaxes(fixedrange=True, showgrid=False)
-        fig.update_yaxes(fixedrange=True, range=[0, y_max_range], showgrid=True, gridcolor="#eef1f5", zeroline=False)
+        fig.update_xaxes(fixedrange=True, showgrid=False, categoryorder="array", categoryarray=period_order)
+        fig.update_yaxes(fixedrange=True, range=[0, y_max_range], showgrid=True, gridcolor="#EEF2F7", zeroline=False)
         fig.update_traces(cliponaxis=False)
 
         st.plotly_chart(fig, config=PLOTLY_CONFIG, width="stretch")
