@@ -24,7 +24,7 @@ GAIN_COLOR = "#0D9488"            # Teal 600 — вместо стандартн
 LOSS_COLOR = "#B5534A"            # Приглушено тухлено червено — вместо наситеното #DC2626
 
 # Серийна палитра за пай-чартове / сравнителни линии — цветна, но в тийл гама
-SERIES_PALETTE = = ["#0F766E", "#D97706", "#2563EB", "#7C3AED", "#DB2777", "#65A30D", "#64748B"]
+SERIES_PALETTE = ["#0F766E", "#D97706", "#2563EB", "#7C3AED", "#DB2777", "#65A30D", "#64748B"]
 
 # Plotly typography — clean SaaS hierarchy
 CHART_FONT = dict(
