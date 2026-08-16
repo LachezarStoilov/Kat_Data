@@ -996,46 +996,47 @@ with tab_overview:
                 else:
                     st.info("Няма предостатъчно обем за изчисление на 'Моментум Лидери'.")
 
-        # 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15)
+# 1.2. ПЕЧЕЛИВШИ И ГУБЕЩИ (ТОП 15)
         with col_ov2:
             if not df_kpi_curr.empty and not df_prev.empty:
                 tot_curr = df_kpi_curr[metric_overview].sum()
                 tot_prev = df_prev[metric_overview].sum()
 
-              if tot_curr > 0 and tot_prev > 0:
-    curr_b_share = (df_kpi_curr.groupby("Brand")[metric_overview].sum() / tot_curr) * 100
-    prev_b_share = (df_prev.groupby("Brand")[metric_overview].sum() / tot_prev) * 100
+                if tot_curr > 0 and tot_prev > 0:
+                    curr_b_share = (df_kpi_curr.groupby("Brand")[metric_overview].sum() / tot_curr) * 100
+                    prev_b_share = (df_prev.groupby("Brand")[metric_overview].sum() / tot_prev) * 100
 
-    # 1. Изчисляваме разликата
-    delta_df = pd.DataFrame({"Share_Curr": curr_b_share, "Share_Prev": prev_b_share}).fillna(0)
-    delta_df["Delta_PP"] = delta_df["Share_Curr"] - delta_df["Share_Prev"]
+                    # 1. Изчисляваме разликата
+                    delta_df = pd.DataFrame({"Share_Curr": curr_b_share, "Share_Prev": prev_b_share}).fillna(0)
+                    delta_df["Delta_PP"] = delta_df["Share_Curr"] - delta_df["Share_Prev"]
 
-    # 2. ЗАКРЪГЛЯМЕ ВЕДНАГА ТУК (преди филтрирането и concat):
-    delta_df["Delta_PP"] = delta_df["Delta_PP"].round(2)
-    delta_df["Share_Curr"] = delta_df["Share_Curr"].round(2)
-    delta_df["Share_Prev"] = delta_df["Share_Prev"].round(2)
+                    # 2. ЗАКРЪГЛЯМЕ ВЕДНАГА ТУК (преди филтрирането и concat):
+                    delta_df["Delta_PP"] = delta_df["Delta_PP"].round(2)
+                    delta_df["Share_Curr"] = delta_df["Share_Curr"].round(2)
+                    delta_df["Share_Prev"] = delta_df["Share_Prev"].round(2)
 
-    # 3. Филтрираме и правим div_df
-    sig_df = delta_df[(delta_df["Share_Curr"] >= 0.2) | (delta_df["Share_Prev"] >= 0.2)].sort_values("Delta_PP", ascending=True)
+                    # 3. Филтрираме и правим div_df
+                    sig_df = delta_df[(delta_df["Share_Curr"] >= 0.2) | (delta_df["Share_Prev"] >= 0.2)].sort_values("Delta_PP", ascending=True)
 
-    top_losers = sig_df.head(15)
-    top_gainers = sig_df.tail(15)
-    div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
+                    top_losers = sig_df.head(15)
+                    top_gainers = sig_df.tail(15)
+                    div_df = pd.concat([top_losers, top_gainers]).drop_duplicates().sort_values("Delta_PP", ascending=True)
 
-    # 4. Генерираме цветовете и етикетите СЛЕД закръглянето
-    colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
-    labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
+                    # 4. Генерираме цветовете и етикетите СЛЕД закръглянето
+                    colors_div = [GAIN_COLOR if d >= 0 else LOSS_COLOR for d in div_df["Delta_PP"]]
+                    labels_div = [f"+{d:.2f}%" if d >= 0 else f"{d:.2f}%" for d in div_df["Delta_PP"]]
 
-    fig_div = go.Figure(go.Bar(
-        x=div_df["Delta_PP"],
-        y=div_df.index,
-        orientation="h",
-        text=labels_div,
-        textposition="outside",
-        marker=dict(color=colors_div, line=dict(width=0), cornerradius=5),
-        hovertemplate="<b>%{y}</b><br>Промяна дял: %{x:+.2f}%<br>Текущ дял: %{customdata[0]:.2f}%<br>Предходен дял: %{customdata[1]:.2f}%<extra></extra>",
-        customdata=div_df[["Share_Curr", "Share_Prev"]]
-    ))
+                    fig_div = go.Figure(go.Bar(
+                        x=div_df["Delta_PP"],
+                        y=div_df.index,
+                        orientation="h",
+                        text=labels_div,
+                        textposition="outside",
+                        marker=dict(color=colors_div, line=dict(width=0), cornerradius=5),
+                        hovertemplate="<b>%{y}</b><br>Промяна дял: %{x:+.2f}%<br>Текущ дял: %{customdata[0]:.2f}%<br>Предходен дял: %{customdata[1]:.2f}%<extra></extra>",
+                        customdata=div_df[["Share_Curr", "Share_Prev"]]
+                    ))
+
                     max_val_abs = max(abs(div_df["Delta_PP"].min()), abs(div_df["Delta_PP"].max()))
                     x_bound = max(1.2, max_val_abs * 1.15)
 
@@ -1053,7 +1054,6 @@ with tab_overview:
                     st.plotly_chart(fig_div, config=PLOTLY_CONFIG, width="stretch")
 
         st.markdown("<br>", unsafe_allow_html=True)
-
         # 2. СЕЗОННОСТ И МЕСЕЧНА ИНТЕНЗИВНОСТ (HEATMAPS)
         st.markdown(f'<div class="section-title" style="--tab-accent:#0284c7">Сезонност и месечна интензивност</div>', unsafe_allow_html=True)
         
